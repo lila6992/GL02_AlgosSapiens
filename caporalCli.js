@@ -1,36 +1,35 @@
-const { program } = require("@caporal/core");
-const fs = require("fs");
-const VCardParser = require("./VCardParser"); // Importer le parser depuis votre fichier existant
+const fs = require('fs');
+const path = require('path');
+const GiftParser = require('./GiftParser'); // Assurez-vous que GiftParser est dans le même dossier
+const cli = require('@caporal/core').default;
 
-program
-  .version("1.0.0")
-  .description("Vérifie si un fichier est au format GIFT")
-  .argument("<fichier>", "Chemin vers le fichier à analyser")
-  .action(({ args }) => {
-    const { fichier } = args;
+const folderPath = 'C:/projects/GL02/Projet/GL02_AlgosSapiens/SujetB_data';  // Assurez-vous du bon chemin ici
 
-    // Vérifie si le fichier existe
-    if (!fs.existsSync(fichier)) {
-      console.error(`Erreur : Le fichier "${fichier}" n'existe pas.`);
-      process.exit(1);
-    }
+cli
+  .version('gift-parser-cli')
+  .description('Un outil CLI pour analyser des fichiers GIFT et effectuer des recherches sur les questions')
 
-    // Lire le contenu du fichier
-    const data = fs.readFileSync(fichier, "utf8");
+  .command('check', 'Vérifier si tous les fichiers GIFT du dossier sont valides')
+  .option('-s, --showSymbols', 'Afficher les symboles analysés à chaque étape', { validator: cli.BOOLEAN, default: false })
+  .option('-t, --showTokenize', 'Afficher les résultats de la tokenisation', { validator: cli.BOOLEAN, default: false })
+  .action(({ options, logger }) => {
+    fs.readdir(folderPath, (err, files) => {
+      if (err) {
+        return logger.error(`Erreur lors de la lecture du dossier : ${err}`);
+      }
 
-    // Crée une instance du parser
-    const parser = new VCardParser(false, false);
+      files.forEach(file => {
+        const filePath = path.join(folderPath, file);
+        fs.readFile(filePath, 'utf8', (err, data) => {
+          if (err) {
+            return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
+          }
 
-    // Vérifie si le contenu est au format GIFT
-    const isGift = parser.isGiftFormat(data);
+          const parser = new GiftParser(options.showTokenize, options.showSymbols);
+          parser.parse(data, file); // On passe le nom du fichier au parser pour l'afficher dans les erreurs
+        });
+      });
+    });
+  })
 
-    // Affiche le résultat
-    if (isGift) {
-      console.log(`Le fichier "${fichier}" est au format GIFT.`);
-    } else {
-      console.log(`Le fichier "${fichier}" n'est PAS au format GIFT.`);
-    }
-  });
-
-// Lance le programme
-program.run();
+cli.run(process.argv.slice(2));
