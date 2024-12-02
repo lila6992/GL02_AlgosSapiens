@@ -16,7 +16,7 @@ function parseAnswers(rawAnswers) {
     });
 }
 
-const folderPath = 'C:/projects/GL02/Projet/GL02_AlgosSapiens/SujetB_data';
+const folderPath =  path.join(__dirname, 'SujetB_data');
 
 cli
     .version('1.0.0')
