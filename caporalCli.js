@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const colors = require('colors'); // Importation du module colors
+const GiftParser = require('./GiftParser');
 const { Question, loadQuestions } = require('./Question');
 const cli = require('@caporal/core').default;
 
@@ -16,16 +17,40 @@ function parseAnswers(rawAnswers) {
     });
 }
 
-const folderPath =  path.join(__dirname, 'SujetB_data');
+const dataFolderPath =  path.join(__dirname, 'SujetB_data');
 
 cli
     .version('1.0.0')
     .description('Outil CLI pour gérer les fichiers GIFT')
 
+    .command('check', 'Vérifier si tous les fichiers GIFT du dossier sont valides')
+    .option('-s, --showSymbols', 'Afficher les symboles analysés à chaque étape', { validator: cli.BOOLEAN, default: false })
+    .option('-t, --showTokenize', 'Afficher les résultats de la tokenisation', { validator: cli.BOOLEAN, default: false })
+    .action(({ options, logger }) => {
+      fs.readdir(dataFolderPath, (err, files) => {
+          if (err) {
+              return logger.error(`Erreur lors de la lecture du dossier : ${err}`);
+          }
+  
+          files.forEach(file => {
+              const filePath = path.join(dataFolderPath, file);
+              fs.readFile(filePath, 'utf8', (err, data) => {
+                  if (err) {
+                      return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
+                  }
+  
+                  const parser = new GiftParser(options.showTokenize, options.showSymbols);
+                  parser.parse(data, file); // On passe le nom du fichier au parser pour l'afficher dans les erreurs
+              });
+          });
+      });
+  });
+  
+
     // Commande 'list'
     .command('list', 'Afficher toutes les questions')
     .action(({ logger }) => {
-        const questions = loadQuestions(folderPath);
+        const questions = loadQuestions(dataFolderPath);
         logger.info('Liste de toutes les questions :\n');
         questions.forEach((question, index) => {
             logger.info(`Question ${index + 1}:\n`);
@@ -46,7 +71,7 @@ cli
     .argument('<keyword>', 'Mot-clé à rechercher')
     .action(({ args, logger }) => {
         const keyword = args.keyword.toLowerCase();
-        const questions = loadQuestions(folderPath);
+        const questions = loadQuestions(dataFolderPath);
 
         const filesWithMatches = questions
             .filter(q => q.title.toLowerCase().includes(keyword))
@@ -72,7 +97,7 @@ cli
     .command('explore', 'Explorer toutes les questions d’un fichier spécifique')
     .argument('<file>', 'Nom du fichier à explorer')
     .action(({ args, logger }) => {
-        const filePath = path.join(folderPath, args.file);
+        const filePath = path.join(dataFolderPath, args.file);
 
         if (!fs.existsSync(filePath)) {
             logger.error(`Le fichier "${args.file}" n'existe pas.`);
