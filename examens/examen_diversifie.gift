@@ -1,0 +1,81 @@
+::Capitales:: Quelle est la capitale de la France ? {
+=Paris
+~Lyon
+~Marseille
+}
+
+::Mathématiques:: Combien font 3 x 3 ? {
+#9
+}
+
+::Vrai ou Faux:: L'eau gèle à 0 degrés Celsius. {
+=true
+}
+
+::Complétion:: Les couleurs primaires sont {=rouge}, bleu et jaune.
+
+::Question générale 1:: Texte de la question générale 1 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 2:: Texte de la question générale 2 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 3:: Texte de la question générale 3 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 4:: Texte de la question générale 4 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 5:: Texte de la question générale 5 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 6:: Texte de la question générale 6 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 7:: Texte de la question générale 7 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 8:: Texte de la question générale 8 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 9:: Texte de la question générale 9 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 10:: Texte de la question générale 10 {
+=Option A
+~Option B
+~Option C
+}
+
+::Question générale 11:: Texte de la question générale 11 {
+=Option A
+~Option B
+~Option C
+}
