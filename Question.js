@@ -2,9 +2,9 @@ const fs = require('fs');
 const path = require('path');
 
 class Question {
-    constructor(title, content, type, answers, file) {
+    constructor(title, statement, type, answers, file) {
         this.title = title;    // Titre de la question
-        this.content = content; // Contenu principal (énoncé)
+        this.statement = statement; // Contenu principal (énoncé)
         this.type = type;      // Type de la question (choix multiples, vrai-faux, etc.)
         this.answers = answers; // Liste des réponses (correctes et incorrectes)
         this.file = file;      // Nom du fichier source
@@ -12,7 +12,7 @@ class Question {
 
     // Méthode pour afficher une question de manière lisible
     toString() {
-        return `${this.title}: ${this.content} (${this.type})`;
+        return `${this.title}: ${this.statement} (${this.type})`;
     }
 }
 
@@ -47,12 +47,12 @@ function loadQuestions(folderPath) {
         let match;
         while ((match = giftPattern.exec(data)) !== null) {
             const title = match[1].trim();
-            const content = match[2].trim();
+            const statement = match[2].trim();
             const rawAnswers = match[3].trim();
             const answers = parseAnswers(rawAnswers);
             const type = determineType(rawAnswers);
 
-            questions.push(new Question(title, content, type, answers, file));
+            questions.push(new Question(title, statement, type, answers, file));
         }
     });
 

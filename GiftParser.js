@@ -33,11 +33,11 @@ class GiftParser {
 
             this.listQuestion(tokens, fileName);
             
-            this.checkFormat(fileName);
+            // this.checkFormat(fileName);
             return this.parsedQuestion;
         } catch (error) {
             this.incrementErrorCount(`Fatal error in parsing ${fileName}: ${error.message}`);
-            this.checkFormat(fileName);
+            // this.checkFormat(fileName);
             return [];
         }
     }
@@ -135,8 +135,11 @@ class GiftParser {
         const description = statement.join(' ');
 
         const questionObj = {
+            file: fileName,
+            category,
+            question,
             title, 
-            description, 
+            statement: statement.join(' '), 
             type, 
             inAnswer: inAnswer || false, 
             answersWeight: answersWeight.flat(), 
@@ -147,6 +150,7 @@ class GiftParser {
         };
 
         this.parsedQuestion.push(questionObj);
+
 
         if (input.length > 0) {
             this.question(input, fileName);
