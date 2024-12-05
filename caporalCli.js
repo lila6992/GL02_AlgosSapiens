@@ -9,7 +9,7 @@ const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 
 const GiftParser = require('./GiftParser');
-const Examen = require('./CollectionQuestions');
+const CollectionQuestions = require('./CollectionQuestions');
 const {Question, CollectionQuestion } = require('./Question');
 
 let rechercheResultats = null;
@@ -25,8 +25,8 @@ cli
     .option('-t, --showTokenize', 'Afficher les résultats de la tokenisation', { validator: cli.BOOLEAN, default: false })
     .action(({ options, logger }) => {
         try {
-            const examen = new Examen();
-            examen.chargeAllFolderQuestions(dataFolderPath, true);
+            const collectionQuestions = new CollectionQuestions();
+            collectionQuestions.chargeAllFolderQuestions(dataFolderPath, true);
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
@@ -36,9 +36,9 @@ cli
     .command('list', 'Afficher toutes les questions')
     .action(({ logger }) => {
         try {
-            const examen = new Examen();
-            const allQuestions = examen.chargeAllFolderQuestions(dataFolderPath, false);
-            examen.logQuestions(allQuestions); 
+            const collectionQuestions = new CollectionQuestions();
+            const allQuestions = collectionQuestions.chargeAllFolderQuestions(dataFolderPath, false);
+            collectionQuestions.logQuestions(allQuestions); 
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
@@ -55,10 +55,10 @@ cli
                     if (err) {
                         return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
                     }
-                    const examen = new Examen();
-                    const questions = examen.chargeExamQuestions(data, file, false); 
+                    const collectionQuestions = new CollectionQuestions();
+                    const questions = collectionQuestions.chargeExamQuestions(data, file, false); 
                     console.log('La collection personnelle :')
-                    examen.logQuestions(questions); 
+                    collectionQuestions.logQuestions(questions); 
                 });
             } else {
                 console.log(`Le fichier de collection personnelle n est pas trouvable à l adresse suivante : ${chalk.red(personalCollectionPath)}`);
@@ -73,15 +73,15 @@ cli
     .argument('<motCle>', 'Mot-clé pour rechercher des questions')
     .action( ({ logger, args }) => {
         try {   
-            const examen = new Examen();
-            const allQuestions = examen.chargeAllFolderQuestions(dataFolderPath, false);
+            const collectionQuestions = new CollectionQuestions();
+            const allQuestions = collectionQuestions.chargeAllFolderQuestions(dataFolderPath, false);
             logger.info(`Total questions chargées : ${allQuestions.length}`);
-            const searchResults = examen.search(allQuestions, args.motCle);
+            const searchResults = collectionQuestions.search(allQuestions, args.motCle);
             if (searchResults.length === 0) {
                 logger.info(`Aucune question trouvée pour le mot-clé : "${args.motCle}".`);
             } else {
                 logger.info(`Nombre de résultats : ${searchResults.length}`);
-                examen.logQuestions(searchResults);
+                collectionQuestions.logQuestions(searchResults);
             }
         } catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
@@ -93,9 +93,9 @@ cli
     .argument('<id>', 'ID 1')
     .action(({ logger, args }) => {
         try {
-            const examen = new Examen();
-            const allQuestions = examen.chargeAllFolderQuestions(dataFolderPath, false);
-            examen.selectQuestionsFromId(allQuestions, args.id, tempStoragePath);
+            const collectionQuestions = new CollectionQuestions();
+            const allQuestions = collectionQuestions.chargeAllFolderQuestions(dataFolderPath, false);
+            collectionQuestions.selectQuestionsFromId(allQuestions, args.id, tempStoragePath);
         } catch (error) {
         logger.error(`Erreur lors de la sélection des questions : ${error.message}`);
         }
@@ -231,9 +231,9 @@ cli
             const nombreQuestions = collection.length;
     
             if (nombreQuestions < 15) {
-                throw new Error(`L'examen doit contenir au moins 15 questions. Actuellement : ${nombreQuestions}.`);
+                throw new Error(`L'collectionQuestions doit contenir au moins 15 questions. Actuellement : ${nombreQuestions}.`);
             } else if (nombreQuestions > 20) {
-                throw new Error(`L'examen ne peut pas contenir plus de 20 questions. Actuellement : ${nombreQuestions}.`);
+                throw new Error(`L'collectionQuestions ne peut pas contenir plus de 20 questions. Actuellement : ${nombreQuestions}.`);
             }
     
             const collectionPersonnelle = new CollectionQuestion();

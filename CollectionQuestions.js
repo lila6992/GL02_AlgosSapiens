@@ -5,7 +5,7 @@ const path = require('path');
 const GiftParser = require('./GiftParser');
 const { CollectionQuestion, Question } = require('./Question');
 
-class Examen {
+class CollectionQuestions {
     constructor(nomFichier) {
         this.nomFichier = nomFichier;
         this.questions = new CollectionQuestion();
@@ -44,7 +44,6 @@ class Examen {
         }
     }
     
-
     logQuestions = function (questions) {
         const transformType = (type) => {
             switch (type) {
@@ -93,9 +92,15 @@ class Examen {
 
     selectQuestionsFromId = function (questions, id, tempStoragePath) {
         const filteredQuestions = questions.filter(question => question?.id === id);
+        
+        if (filteredQuestions.length === 0) {
+            console.error(`Aucune question trouvée avec l'ID : ${id}`);
+            return;
+        }
+    
         console.log('Question sélectionnée :');
-        this.logQuestions(filteredQuestions); 
-
+        this.logQuestions(filteredQuestions);
+    
         // Vérifier si le fichier existe
         fs.exists(tempStoragePath, (exists) => {
             if (exists) {
@@ -104,16 +109,25 @@ class Examen {
                         console.error('Erreur de lecture du fichier :', err);
                         return;
                     }
-
-                    // Ajouter les nouvelles questions aux questions existantes
+    
                     let existingSelectedQuestions = [];
                     try {
                         existingSelectedQuestions = JSON.parse(data); // Parser les données existantes
                     } catch (e) {
                         console.error('Erreur de parsing JSON :', e);
                     }
-                    existingSelectedQuestions.push(...filteredQuestions);
-
+    
+                    // Vérifier si l'ID est déjà présent
+                    const existingIds = new Set(existingSelectedQuestions.map(q => q.id));
+                    const newQuestions = filteredQuestions.filter(q => !existingIds.has(q.id));
+                    if (newQuestions.length === 0) {
+                        console.error(`La question avec l'ID ${id} est déjà dans le fichier ${tempStoragePath}.`);
+                        return;
+                    }
+    
+                    // Ajouter uniquement les nouvelles questions
+                    existingSelectedQuestions.push(...newQuestions);
+    
                     // Réécrire le fichier avec les nouvelles questions
                     writeFile(tempStoragePath, JSON.stringify(existingSelectedQuestions, null, 2), 'utf8')
                         .then(() => {
@@ -134,7 +148,8 @@ class Examen {
                     });
             }
         });
-    }
+    };
+    
 
 
     /**
@@ -166,4 +181,4 @@ class Examen {
     }
 }
 
-module.exports = Examen;
+module.exports = CollectionQuestions;
