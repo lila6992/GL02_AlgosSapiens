@@ -39,7 +39,6 @@ class GiftParser {
 
             this.listQuestion(tokens, fileName);
             
-            // this.checkFormat(fileName);
             return this.parsedQuestion;
         } catch (error) {
             this.incrementErrorCount(`Fatal error in parsing ${fileName}: ${error.message}`);
@@ -58,13 +57,11 @@ class GiftParser {
 
     question(input, fileName) {
         let inAnswer = false;
-        let title = '';
-        let statement = [];
-        let answer = [[]];
-        let choice = [[]];
-        let category = 'none';
-        let type;
-        let answersWeight = [[]];
+        let titre = '';
+        let texte = [];
+        let bonnesReponses = [[]];
+        let reponses = [[]];
+        let typeDeQuestion;
         let previous;
         let i = 1;
     
@@ -73,37 +70,35 @@ class GiftParser {
         while (input.length > 0) {
             try {
                 if (this.check('::', input)) {
-                    if (title === '') title = this.title(input);
-                    else statement.push(this.statement(input));
-                } else if (this.check('$CATEGORY:', input)) {
-                    category = this.category(input);
+                    if (titre === '') titre = this.titre(input);
+                    else texte.push(this.texte(input));
                 } else if (this.check('%', input)) {
-                    answersWeight[answersWeight.length - 1].push(parseInt(this.answerWeight(input)));
                     input[0] = previous;
                 } else if (this.check('=', input) && inAnswer) {
-                    answer[answer.length - 1].push(this.answer(input));
-                    if (answer[answer.length - 1].length > answersWeight[answersWeight.length - 1].length)
-                        answersWeight[answersWeight.length - 1].push(100);
-                    if (answer[answer.length - 1][0].includes('->')) type = 'match';
+                    // Collect correct answers in both bonnesReponses and reponses
+                    const correctReponse = this.bonnesReponses(input);
+                    bonnesReponses[bonnesReponses.length - 1].push(correctReponse);
+                    reponses[reponses.length - 1].push(correctReponse);
                 } else if (this.check('{', input)) {
                     inAnswer = true;
-                    type = 'ouverte';
+                    typeDeQuestion = 'ouverte';
                     if (input[1] === '=' || input[1] === '~' || input[1] === '}') {
-                        answer.push([]);
-                        choice.push([]);
-                        answersWeight.push([]);
-                        statement.push('(' + i + ')');
+                        bonnesReponses.push([]);
+                        reponses.push([]);
+                        texte.push('(' + i + ')');
                         i++;
                     }
                     this.next(input);
                 } else if (this.check('~', input) && !['=', '%'].includes(input[1])) {
-                    type = 'qcml';
-                    choice[choice.length - 1].push(this.choice(input));
+                    typeDeQuestion = 'qcml';
+                    // Collect incorrect answers in reponses
+                    const incorrectReponse = this.reponses(input);
+                    reponses[reponses.length - 1].push(incorrectReponse);
                 } else if (this.check('}', input)) {
                     inAnswer = false;
                     this.expect('}', input);
                 } else {
-                    statement.push(this.statement(input));
+                    texte.push(this.texte(input));
                 }
             } catch (error) {
                 this.incrementErrorCount(`Error parsing question in ${fileName}: ${error.message}`);
@@ -111,9 +106,9 @@ class GiftParser {
             }
         }
     
-        if (type === 'ouverte' && choice[choice.length - 1].length === 0 && answer[answer.length - 1].length > 0)
-            type = 'numerique';
-        else if (!type) type = 'texte';
+        if (typeDeQuestion === 'ouverte' && reponses[reponses.length - 1].length === 0 && bonnesReponses[bonnesReponses.length - 1].length > 0)
+            typeDeQuestion = 'numerique';
+        else if (!typeDeQuestion) typeDeQuestion = 'texte';
     
         // Increment global question index
         this.questionIndex++;
@@ -124,15 +119,11 @@ class GiftParser {
             id: uniqueKey,
             file: fileName,
             questionIndex: this.questionIndex,
-            category,
-            title,
-            type,
-            statement: statement.join(' '),
-            inAnswer: inAnswer || false,
-            answersWeight: answersWeight.flat(),
-            answer: answer.flat(),
-            choice: choice.flat(),
-            content: input.join(' '),
+            titre,
+            typeDeQuestion,
+            texte: texte.join(' '),
+            bonnesReponses: bonnesReponses.flat(),
+            reponses: reponses.flat(),
         };
     
         this.parsedQuestion.push(questionObj);
@@ -143,79 +134,64 @@ class GiftParser {
     
         return true;
     }
-    
 
-    normaliserType(type) {
-        switch (type) {
-            case 'qcml':
-                return 'choix_multiple';
-            case 'true_false':
-                return 'vrai_faux';
-            case 'numerique':
-                return 'numerique';
-            case 'texte':
-                return 'mot_manquant';
-            default:
-                return 'autre';
-        }
-    }
-
-    title(input) {
+    titre(input) {
         this.expect("::", input);
         const curS = this.next(input);
         const matched = curS.match(/^(\w|\.|\/|\+|-|"|'|&|\(|\)|\[|\]|:|,|\u2013|\u2014| )+$/i);
         if (matched) return matched[0];
-        this.incrementErrorCount(`Invalid title: ${curS}`);
+        this.incrementErrorCount(`Invalid titre: ${curS}`);
         return '';
     }
 
-    statement(input) {
+    texte(input) {
         const curS = this.next(input);
-    
-        // Match text allowing printable ASCII, common Unicode characters, and GIFT syntax.
         const matched = curS.match(/^[\s\w.,;:'"“”‘’\-!?()\[\]\/&%€$@+=<>…•{}#:~|]*$/u);
         if (matched) return matched[0];
     
-        this.incrementErrorCount(`Invalid statement: ${curS}`);
+        this.incrementErrorCount(`Invalid texte: ${curS}`);
         return '';
     }
     
 
-    answer(input) {
+    bonnesReponses(input) {
         this.expect('=', input);
         const curS = this.next(input);
         const matched = curS.match(/^(\w|\.|-|,|\u2014|\u2013|\u00a0|\\|\/|\||\*|:|'|\?|->|'|´|'|'|\$|\(|\)| )+$/i);
-        if (matched) return matched[0];
-        this.incrementErrorCount(`Invalid answer: ${curS}`);
+        
+        if (matched) {
+            const answer = matched[0].trim();  // Remove any leading or trailing spaces
+            // Check for invalid values (empty, space, or "—")
+            if (answer === "" || answer === " " || answer === "—") {
+                this.incrementErrorCount(`Invalid bonnesReponses: ${curS}`);
+                return '';
+            }
+            
+            return answer;
+        }
+        this.incrementErrorCount(`Invalid bonnesReponses: ${curS}`);
         return '';
     }
-
-    answerWeight(input) {
-        this.expect("%", input);
-        const curS = this.next(input);
-        const matched = curS.match(/^(-?)\d{1,3}$/);
-        if (matched) return matched[0];
-        this.incrementErrorCount(`Invalid answer weight: ${curS}`);
-        return '0';
-    }
-
-    category(input) {
-        this.expect("$CATEGORY:", input);
-        const curS = this.next(input);
-        const matched = curS.match(/\$\w+\$((\/?(\w| )+\/?)|,)+/i);
-        if (matched) return matched[0];
-        this.incrementErrorCount(`Invalid category: ${curS}`);
-        return 'none';
-    }
-
-    choice(input) {
+    
+    reponses(input) {
         this.expect("~", input);
         const curS = this.next(input);
         const matched = curS.match(/^(\w|\.|-|,|\u2014|\u2013|\u00a0|\\|\/|:|'|\?|'|´|'|'|\(|\)| )+$/i);
-        if (matched) return matched[0];
-        this.incrementErrorCount(`Invalid choice: ${curS}`);
+        
+        if (matched) {
+            const response = matched[0].trim();  // Remove any leading or trailing spaces
+            // Check for invalid values (empty, space, or "—")
+            if (response === "" || response === " " || response === "—") {
+                this.incrementErrorCount(`Invalid reponses: ${curS}`);
+                return '';
+            }
+            
+            return response;
+        }
+        this.incrementErrorCount(`Invalid reponses: ${curS}`);
         return '';
     }
+    
 
     check(s, input) {
         return input[0] === s;

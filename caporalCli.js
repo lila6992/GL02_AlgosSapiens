@@ -4,7 +4,7 @@ const colors = require('colors');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
 
-const tempStoragePath = path.join(__dirname, 'data', 'temp_search_results.json');
+const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
 const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 
@@ -102,87 +102,13 @@ cli
     })
     
     // add
-    // .command('add', 'Ajouter une question à la collection personnelle depuis les résultats de recherche')
-    // .argument('<index>', 'Indice de la question à ajouter (basé sur les résultats de search)')
-    // .action(({ logger, args }) => {
-    //     try {
-    //         // Check if temp storage file exists
-    //         if (!fs.existsSync(tempStoragePath)) {
-    //             throw new Error("Aucun résultat de recherche disponible. Lancez d'abord une commande `search`.");
-    //         }
-    
-    //         // Read the saved search results
-    //         const savedResults = JSON.parse(fs.readFileSync(tempStoragePath, 'utf-8'));
-    
-    //         const questionIndex = parseInt(args.index, 10) - 1; // Indices 1-based
-    
-    //         if (questionIndex < 0 || questionIndex >= savedResults.length) {
-    //             throw new Error(`Indice ${args.index} invalide. Assurez-vous qu'il est compris entre 1 et ${savedResults.length}.`);
-    //         }
-    
-    //         const question = new Question(
-    //             savedResults[questionIndex].titre,
-    //             savedResults[questionIndex].texte,
-    //             savedResults[questionIndex].reponses,
-    //             savedResults[questionIndex].bonnesReponses,
-    //             savedResults[questionIndex].typeDeQuestion
-    //         );
-    
-    //         // Load existing collection
-    //         let collection = [];
-    //         if (fs.existsSync(personalCollectionPath)) {
-    //             collection = JSON.parse(fs.readFileSync(personalCollectionPath, 'utf-8'));
-    //         }
-    
-    //         // Check if question already exists
-    //         if (!collection.some(q => q.titre === question.titre)) {
-    //             collection.push(question);
-    //             fs.writeFileSync(personalCollectionPath, JSON.stringify(collection), 'utf-8');
-    //             logger.info(`Question "${question.titre}" ajoutée à la collection personnelle.`);
-    //         } else {
-    //             logger.info(`La question "${question.titre}" existe déjà dans la collection.`);
-    //         }
-    //     } catch (error) {
-    //         logger.error(`Erreur : ${error.message}`);
-    //     }
-    // })
-
-    .command('add', 'Ajouter une question à la collection personnelle depuis les résultats de recherche')
-    .argument('<id>', 'ID de la question à ajouter')
+    .command('add', 'Ajouter une question à une  collection')
+    .argument('<collection>', 'Nom complet avec extension du fichier de collection')
     .action(({ logger, args }) => {
         try {  
-            // Read the saved search results
-            if (fs.existsSync(tempStoragePath)) {
-                fs.readFile(tempStoragePath, 'utf8', (err, data) => {
-                    if (err) {
-                        return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
-                    }
-                    const parser = new GiftParser();
-                    const searchResults = parser.parse(data, file);
-                    if (searchResults.length === 0) {
-                        console.log(chalk('Aucune question gardée en mémoire'))
-                        return;
-                    }
-                });
-            } else {
-                console.log(`Le fichier temporaire contenant les résultats de recherche n est pas trouvable à l adresse suivante : ${chalk.red(personalCollectionPath)}`);
-                return;
-            }
-    
-            // Load existing collection
-            let collection = [];
-            if (fs.existsSync(personalCollectionPath)) {
-                collection = JSON.parse(fs.readFileSync(personalCollectionPath, 'utf-8'));
-            }
-    
-            // Check if question already exists
-            if (!collection.some(q => q.titre === question.titre)) {
-                collection.push(question);
-                fs.writeFileSync(personalCollectionPath, JSON.stringify(collection), 'utf-8');
-                logger.info(`Question "${question.titre}" ajoutée à la collection personnelle.`);
-            } else {
-                logger.info(`La question "${question.titre}" existe déjà dans la collection.`);
-            }
+            const collectionQuestions = new CollectionQuestions();
+            const collectionPath = path.join(__dirname, 'data', 'gift', args.collection); 
+            collectionQuestions.ajouterQuestions(collectionPath, tempStoragePath);
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }

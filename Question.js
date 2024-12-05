@@ -67,7 +67,7 @@ class CollectionQuestion {
                 console.log(`\nQuestion [${index + 1}/${this.questions.length}]`);
                 console.log(`Titre : ${question.titre}`);
                 console.log(`Texte : ${question.texte}`);
-                console.log(`Type : ${question.typeDeQuestion}`);
+                console.log(`typeDeQuestion : ${question.typeDeQuestion}`);
                 console.log(`Réponses : ${question.reponses.join(', ')}`);
 
                 rl.question("Voulez-vous sélectionner cette question ? (oui/non) ", (reponse) => {
@@ -122,7 +122,7 @@ class CollectionQuestion {
                 case 'mot_manquant':
                     return `::${q.titre}:: ${q.texte.replace('___', `{=${q.bonnesReponses[0]}}`)}`;
                 default:
-                    throw new Error(`Type de question inconnu : ${q.typeDeQuestion}`);
+                    throw new Error(`typeDeQuestion de question inconnu : ${q.typeDeQuestion}`);
             }
         }).join('\n\n');
 

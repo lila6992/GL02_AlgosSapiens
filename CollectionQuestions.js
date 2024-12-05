@@ -45,8 +45,8 @@ class CollectionQuestions {
     }
     
     logQuestions = function (questions) {
-        const transformType = (type) => {
-            switch (type) {
+        const transformType = (typeDeQuestion) => {
+            switch (typeDeQuestion) {
                 case 'qcml':
                     return 'Choix multiples';
                 case 'vrai_faux':
@@ -54,30 +54,35 @@ class CollectionQuestions {
                 case 'numérique':
                     return 'Numérique';
                 default:
-                    return type.charAt(0).toUpperCase() + type.slice(1);
+                    return typeDeQuestion.charAt(0).toUpperCase() + typeDeQuestion.slice(1);
             }
         };
 
         questions.forEach((question, index) => {
             console.log(`\n`);
             console.log(chalk.bold(`ID : `) + chalk.gray(String(question.id)));
-            console.log(chalk.bold(`Fichier source : `) + chalk.gray(question.file));
-            console.log(chalk.bold(`Question : `) + chalk.gray(String(question.questionIndex)));
-            console.log(chalk.bold(`Titre : `) + chalk.gray(String(question.title)));
-            console.log(chalk.bold(`Type : `) + chalk.gray(transformType(question.type)));
-            console.log(chalk.bold(`Enoncé : `) + chalk.gray(question.statement));
+            console.log(chalk.bold(`Titre : `) + chalk.gray(String(question.titre)));
+            console.log(chalk.bold(`typeDeQuestion : `) + chalk.gray(transformType(question.typeDeQuestion)));
+            console.log(chalk.bold(`Enoncé : `) + chalk.gray(question.texte));
         
-            if (Array.isArray(question.answer) && question.answer.length > 0) {
-                console.log(chalk.bold("Réponses :"));
-                question.answer.forEach(ans => {
+            if (Array.isArray(question.bonnesReponses) && question.bonnesReponses.length > 0) {
+                console.log(chalk.bold("Bonnes réponses :"));
+                question.bonnesReponses.forEach(ans => {
                     console.log(chalk.gray(`\t✔️ ${ans}`));
                 });
             }
         
-            if (Array.isArray(question.choice) && question.choice.length > 0) {
-                console.log(chalk.bold("Autres choix :"));
-                question.choice.forEach(indivChoice => {
-                    console.log(chalk.gray(`\t❌ ${indivChoice}`));
+            if (Array.isArray(question.reponses) && question.reponses.length > 0) {
+                console.log(chalk.bold("Choix de réponse :"));
+                question.reponses.forEach(indivreponses => {
+                    // Check if the indivreponse is in bonnesReponses
+                    const isCorrect = question.bonnesReponses.includes(indivreponses);
+                    
+                    if (isCorrect) {
+                        console.log(chalk.grey(`\t✔️ ${indivreponses}`));  // Correct answer with check mark
+                    } else {
+                        console.log(chalk.grey(`\t❌ ${indivreponses}`));  // Incorrect answer with cross
+                    }
                 });
             }
         });
@@ -85,8 +90,8 @@ class CollectionQuestions {
 
     search(questions, searchKey) {
         return questions.filter(q => 
-            (q.title && q.title.toLowerCase().includes(searchKey.toLowerCase())) ||
-            (q.statement && q.statement.toLowerCase().includes(searchKey.toLowerCase()))
+            (q.titre && q.titre.toLowerCase().includes(searchKey.toLowerCase())) ||
+            (q.texte && q.texte.toLowerCase().includes(searchKey.toLowerCase()))
         );
     }
 
@@ -149,6 +154,63 @@ class CollectionQuestions {
             }
         });
     };
+    
+    ajouterQuestions = function (collectionPath, tempStoragePath) {
+        const collectionQuestions = this.chargeExamQuestions('string', collectionPath, false);
+    
+        // Read the temporary storage to ensure no duplicate IDs are added
+        fs.readFile(tempStoragePath, 'utf8', (err, data) => {
+            if (err && err.code !== 'ENOENT') {
+                console.error('Erreur de lecture du fichier :', err);
+                return;
+            }
+    
+            let selectedQuestions = [];
+            if (data) {
+                try {
+                    selectedQuestions = JSON.parse(data); // Parse selected questions if the file exists
+                } catch (e) {
+                    console.error('Erreur de parsing JSON :', e);
+                    return;
+                }
+            }
+    
+            // Filter new selected questions to avoid duplicates
+            const existingIds = new Set(selectedQuestions.map(q => q.id));
+            const newSelectedQuestions = collectionQuestions.filter(q => !existingIds.has(q.id));
+            if (newSelectedQuestions.length === 0) {
+                console.log("Toutes les questions sélectionnées sont déjà dans la collection.");
+                return;
+            }
+    
+            // Convert questions to GIFT format and write them
+            const giftContent = newSelectedQuestions.map(question => this.convertToGiftFormat(question)).join('\n\n');
+            fs.appendFile(collectionPath, giftContent, 'utf8', (writeErr) => {
+                if (writeErr) {
+                    console.error('Erreur lors de l\'écriture dans le fichier :', writeErr);
+                    return;
+                }
+                console.log(`Les nouvelles questions ont été ajoutées dans : ${collectionPath}`);
+            });
+        });
+    };
+
+    convertToGiftFormat = function (question) {
+        // Convert the question object into GIFT format
+        let giftFormat = `::${question.titre}::${question.texte}\n`;
+        if (question.typeDeQuestion === 'ouverte') {
+            giftFormat += `[markdown] ${question.bonnesReponses.join(' ')}`;
+        } else if (question.reponses && question.reponses.length > 0) {
+            giftFormat += '{\n';
+            giftFormat += question.reponses
+                .map((reponses, index) =>
+                    question.bonnesReponsessWeight[index] === 1 ? `=${reponses}` : `~${reponses}`
+                )
+                .join('\n');
+            giftFormat += '\n}';
+        }
+        return giftFormat;
+    }
     
 
 
