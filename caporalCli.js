@@ -50,20 +50,50 @@ cli
     // Commande 'list'
     .command('list', 'Afficher toutes les questions')
     .action(({ logger }) => {
-        const questions = loadQuestions(dataFolderPath);
-        logger.info('Liste de toutes les questions :\n');
-        questions.forEach((question, index) => {
-            logger.info(`Question ${index + 1}:\n`);
-            logger.info(`\tTitre : ${question.title}`);
-            logger.info(`\tContenu : ${question.content}`);
-            logger.info(`\tType : ${question.type}`);
-            logger.info(`\tFichier source : ${question.file}`);
-            logger.info(`\tRéponses :`);
-            question.answers.forEach(answer => {
-                logger.info(`\t\t${answer.correct ? '✔️'.green : '❌'.red} ${answer.text}`);
+      fs.readdir(dataFolderPath, (err, files) => {
+        if (err) {
+            return logger.error(`Erreur lors de la lecture du dossier : ${err}`);
+        }
+
+        files.forEach(file => {
+            const filePath = path.join(dataFolderPath, file);
+            fs.readFile(filePath, 'utf8', (err, data) => {
+                if (err) {
+                    return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
+                }
+
+                const parser = new GiftParser();
+                parser.parse(data, file); 
+
+                const parsedQuestions = parser.parse(data, file);
+                parsedQuestions.forEach((question, index) => {
+                  // console.log(JSON.stringify(question, null, 2));
+                  console.log(`\n`);
+                  logger.info(`\tID : ${String(question.id)}`);
+                  logger.info(`\tFichier source : ${question.file}`);
+                  logger.info(`\tQuestion : ${String(question.questionIndex)}`);
+                  logger.info(`\tTitre : ${String(question.title)}`);
+                  logger.info(`\tType : ${question.type}`);
+                  logger.info(`\tEnoncé : ${question.statement}`);
+              
+                  if (Array.isArray(question.answer) && question.answer.length > 0) {
+                      logger.info("\tRéponses :");
+                      question.answer.forEach(ans => {
+                          logger.info(`\t\t ✔️ ${ans}`);
+                      });
+                  }
+              
+                  if (Array.isArray(question.choice) && question.choice.length > 0) {
+                      logger.info("\tAutres choix :");
+                      question.choice.forEach(indivChoice => {
+                          logger.info(`\t\t❌ ${indivChoice}`);
+                      });
+                  }
+              
+                });
             });
-            logger.info('\n');
         });
+    });
     })
 
     // Commande 'search'

@@ -1,4 +1,5 @@
 const chalk = require('chalk');
+const { v4: uuidv4 } = require('uuid');
 
 class GiftParser {
     constructor() {
@@ -135,17 +136,17 @@ class GiftParser {
         const description = statement.join(' ');
 
         const questionObj = {
+            id: uuidv4(),
             file: fileName,
+            questionIndex: question,
             category,
-            question,
             title, 
-            statement: statement.join(' '), 
             type, 
+            statement: statement.join(' '), 
             inAnswer: inAnswer || false, 
             answersWeight: answersWeight.flat(), 
             answer: answer.flat(), 
             choice: choice.flat(), 
-            category, 
             content: input.join(' ')
         };
 
