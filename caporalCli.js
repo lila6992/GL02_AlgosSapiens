@@ -83,19 +83,23 @@ cli
                 logger.info(`Nombre de résultats : ${searchResults.length}`);
                 examen.logQuestions(searchResults);
             }
-    
-            // Save search results
-            // await fs.promises.writeFile(
-            //     tempStoragePath,
-            //     JSON.stringify(searchResults, null, 2),
-            //     'utf8'
-            // );
-            logger.info(`Résultats enregistrés dans : ${tempStoragePath}`);
         } catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
     })
     
+    // select
+    .command('select', 'Sélectionner des ID et charger les questions')
+    .argument('<id>', 'ID 1')
+    .action(({ logger, args }) => {
+        try {
+            const examen = new Examen();
+            const allQuestions = examen.chargeAllFolderQuestions(dataFolderPath, false);
+            examen.selectQuestionsFromId(allQuestions, args.id, tempStoragePath);
+        } catch (error) {
+        logger.error(`Erreur lors de la sélection des questions : ${error.message}`);
+        }
+    })
     
     // add
     // .command('add', 'Ajouter une question à la collection personnelle depuis les résultats de recherche')

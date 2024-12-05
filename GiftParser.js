@@ -4,8 +4,13 @@ const { v4: uuidv4 } = require('uuid');
 class GiftParser {
     constructor() {
         this.parsedQuestion = [];
+        this.questionIndex = 0; 
         this.errorCount = 0;
         this.errorMessages = [];
+    }
+
+    sanitizeFileName(fileName) {
+        return fileName.replace('.gift', '');
     }
 
     parse(data, fileName) {
@@ -53,7 +58,6 @@ class GiftParser {
 
     question(input, fileName) {
         let inAnswer = false;
-        let question = 0;
         let title = '';
         let statement = [];
         let answer = [[]];
@@ -63,61 +67,41 @@ class GiftParser {
         let answersWeight = [[]];
         let previous;
         let i = 1;
-
-        while (question <= 2 && input.length > 0) {
+    
+        const sanitizedFileName = this.sanitizeFileName(fileName);
+    
+        while (input.length > 0) {
             try {
                 if (this.check('::', input)) {
-                    question += 1;
-                    
-                    if (question === 1) {
-                        title = this.title(input);
-                    } else if (question === 2 && input[1] !== '{' && input[1] !== '//') {
-                        this.expect('::', input);
-                        statement.push(this.statement(input));
-                    }
+                    if (title === '') title = this.title(input);
+                    else statement.push(this.statement(input));
                 } else if (this.check('$CATEGORY:', input)) {
                     category = this.category(input);
                 } else if (this.check('%', input)) {
-                    answersWeight[answersWeight.length-1].push(parseInt(this.answerWeight(input)));
+                    answersWeight[answersWeight.length - 1].push(parseInt(this.answerWeight(input)));
                     input[0] = previous;
-                } else if (this.check('=', input) && input[1] != '%' && inAnswer) {
-                    answer[answer.length-1].push(this.answer(input));
-                    if (answer[answer.length-1].length > answersWeight[answersWeight.length-1].length)
-                        answersWeight[answersWeight.length-1].push(100);
-                    
-                    if (answer[answer.length-1][0].includes('->'))
-                        type = 'match';
+                } else if (this.check('=', input) && inAnswer) {
+                    answer[answer.length - 1].push(this.answer(input));
+                    if (answer[answer.length - 1].length > answersWeight[answersWeight.length - 1].length)
+                        answersWeight[answersWeight.length - 1].push(100);
+                    if (answer[answer.length - 1][0].includes('->')) type = 'match';
                 } else if (this.check('{', input)) {
                     inAnswer = true;
                     type = 'ouverte';
-                    
-                    if(input[1] === '=' || input[1] === '~' || input[1] === '}'){
+                    if (input[1] === '=' || input[1] === '~' || input[1] === '}') {
                         answer.push([]);
                         choice.push([]);
                         answersWeight.push([]);
-                        statement.push('('+i+')');
+                        statement.push('(' + i + ')');
                         i++;
                     }
                     this.next(input);
-                } else if (this.check('TRUE', input) || this.check('T', input) || this.check('FALSE', input) || this.check('F', input)) {
-                    type = 'vrai_faux';
-                    answer.push([]);
-                    answersWeight.push([]);
-                    answer[answer.length-1].push(input[0]);
-                    
-                    if (answer[answer.length-1].length > answersWeight[answersWeight.length-1].length)
-                        answersWeight[answersWeight.length-1].push(100);
-                    
-                    this.next(input);
-                } else if (this.check('~', input) && input[1] != '=' && input[1] != '%') {
+                } else if (this.check('~', input) && !['=', '%'].includes(input[1])) {
                     type = 'qcml';
-                    choice[choice.length-1].push(this.choice(input));
-                } else if (this.check('}', input) && input.length > 1 && input[1] != '::') {
+                    choice[choice.length - 1].push(this.choice(input));
+                } else if (this.check('}', input)) {
                     inAnswer = false;
                     this.expect('}', input);
-                    
-                    if (input[0] != '//') 
-                        statement.push(this.statement(input));
                 } else {
                     statement.push(this.statement(input));
                 }
@@ -126,36 +110,40 @@ class GiftParser {
                 break;
             }
         }
-
-        if (type === 'ouverte' && choice[choice.length-1].length === 0 && answer[answer.length-1].length > 0)
+    
+        if (type === 'ouverte' && choice[choice.length - 1].length === 0 && answer[answer.length - 1].length > 0)
             type = 'numerique';
-        else if (type === undefined)
-            type = 'texte';
-
+        else if (!type) type = 'texte';
+    
+        // Increment global question index
+        this.questionIndex++;
+    
+        const uniqueKey = `${sanitizedFileName}-${this.questionIndex}`;
+    
         const questionObj = {
-            id: uuidv4(),
+            id: uniqueKey,
             file: fileName,
-            questionIndex: question,
+            questionIndex: this.questionIndex,
             category,
-            title, 
-            type, 
-            statement: statement.join(' '), 
-            inAnswer: inAnswer || false, 
-            answersWeight: answersWeight.flat(), 
-            answer: answer.flat(), 
-            choice: choice.flat(), 
-            content: input.join(' ')
+            title,
+            type,
+            statement: statement.join(' '),
+            inAnswer: inAnswer || false,
+            answersWeight: answersWeight.flat(),
+            answer: answer.flat(),
+            choice: choice.flat(),
+            content: input.join(' '),
         };
-
+    
         this.parsedQuestion.push(questionObj);
-
-
+    
         if (input.length > 0) {
             this.question(input, fileName);
         }
-
+    
         return true;
     }
+    
 
     normaliserType(type) {
         switch (type) {

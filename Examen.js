@@ -1,4 +1,6 @@
 const fs = require('fs');
+const writeFile = require('fs').promises.writeFile;
+const chalk = require('chalk');
 const path = require('path');
 const GiftParser = require('./GiftParser');
 const { CollectionQuestion, Question } = require('./Question');
@@ -24,7 +26,6 @@ class Examen {
             const files = fs.readdirSync(dataFolderPath);
             const allQuestions = [];
     
-            // Process each file synchronously
             files.forEach((file) => {
                 try {
                     const filePath = path.join(dataFolderPath, file);
@@ -59,28 +60,27 @@ class Examen {
         };
 
         questions.forEach((question, index) => {
-            // console.log(JSON.stringify(question, null, 2));
             console.log(`\n`);
-            console.log(`ID : ${String(question.id)}`);
-            console.log(`Fichier source : ${question.file}`);
-            console.log(`Titre : ${String(question.title)}`);
-            console.log(`Type : ${transformType(question.type)}`);
-            console.log(`Enoncé : ${question.statement}`);
+            console.log(chalk.bold(`ID : `) + chalk.gray(String(question.id)));
+            console.log(chalk.bold(`Fichier source : `) + chalk.gray(question.file));
+            console.log(chalk.bold(`Question : `) + chalk.gray(String(question.questionIndex)));
+            console.log(chalk.bold(`Titre : `) + chalk.gray(String(question.title)));
+            console.log(chalk.bold(`Type : `) + chalk.gray(transformType(question.type)));
+            console.log(chalk.bold(`Enoncé : `) + chalk.gray(question.statement));
         
             if (Array.isArray(question.answer) && question.answer.length > 0) {
-                console.log("Réponses :");
+                console.log(chalk.bold("Réponses :"));
                 question.answer.forEach(ans => {
-                    console.log(`\t ✔️ ${ans}`);
+                    console.log(chalk.gray(`\t✔️ ${ans}`));
                 });
             }
         
             if (Array.isArray(question.choice) && question.choice.length > 0) {
-                console.log("Autres choix :");
+                console.log(chalk.bold("Autres choix :"));
                 question.choice.forEach(indivChoice => {
-                    console.log(`\t❌ ${indivChoice}`);
+                    console.log(chalk.gray(`\t❌ ${indivChoice}`));
                 });
             }
-        
         });
     }
 
@@ -89,6 +89,51 @@ class Examen {
             (q.title && q.title.toLowerCase().includes(searchKey.toLowerCase())) ||
             (q.statement && q.statement.toLowerCase().includes(searchKey.toLowerCase()))
         );
+    }
+
+    selectQuestionsFromId = function (questions, id, tempStoragePath) {
+        const filteredQuestions = questions.filter(question => question?.id === id);
+        console.log('Question sélectionnée :');
+        this.logQuestions(filteredQuestions); 
+
+        // Vérifier si le fichier existe
+        fs.exists(tempStoragePath, (exists) => {
+            if (exists) {
+                fs.readFile(tempStoragePath, 'utf8', (err, data) => {
+                    if (err) {
+                        console.error('Erreur de lecture du fichier :', err);
+                        return;
+                    }
+
+                    // Ajouter les nouvelles questions aux questions existantes
+                    let existingSelectedQuestions = [];
+                    try {
+                        existingSelectedQuestions = JSON.parse(data); // Parser les données existantes
+                    } catch (e) {
+                        console.error('Erreur de parsing JSON :', e);
+                    }
+                    existingSelectedQuestions.push(...filteredQuestions);
+
+                    // Réécrire le fichier avec les nouvelles questions
+                    writeFile(tempStoragePath, JSON.stringify(existingSelectedQuestions, null, 2), 'utf8')
+                        .then(() => {
+                            console.log(`Question ajoutée dans : ${tempStoragePath}`);
+                        })
+                        .catch((error) => {
+                            console.error('Erreur lors de l\'écriture dans le fichier :', error);
+                        });
+                });
+            } else {
+                // Si le fichier n'existe pas, créer un nouveau fichier et y écrire les questions
+                writeFile(tempStoragePath, JSON.stringify(filteredQuestions, null, 2), 'utf8')
+                    .then(() => {
+                        console.log(`Résultats enregistrés dans : ${tempStoragePath}`);
+                    })
+                    .catch((error) => {
+                        console.error('Erreur lors de l\'écriture dans le fichier :', error);
+                    });
+            }
+        });
     }
 
 
