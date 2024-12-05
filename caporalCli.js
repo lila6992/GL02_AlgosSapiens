@@ -1,10 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const colors = require('colors');
+const chalk = require('chalk');
 const cli = require('@caporal/core').default;
 
-const TEMP_STORAGE_PATH = path.join(__dirname, 'data', 'temp_search_results.json');
-const PERSONAL_COLLECTION_PATH = path.join(__dirname, 'data', 'personal_collection.json');
+const tempStoragePath = path.join(__dirname, 'data', 'temp_search_results.json');
+const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 
 const GiftParser = require('./GiftParser');
@@ -23,81 +24,58 @@ cli
     .option('-s, --showSymbols', 'Afficher les symboles analysés à chaque étape', { validator: cli.BOOLEAN, default: false })
     .option('-t, --showTokenize', 'Afficher les résultats de la tokenisation', { validator: cli.BOOLEAN, default: false })
     .action(({ options, logger }) => {
-      fs.readdir(dataFolderPath, (err, files) => {
-          if (err) {
-              return logger.error(`Erreur lors de la lecture du dossier : ${err}`);
-          }
-  
-          files.forEach(file => {
-              const filePath = path.join(dataFolderPath, file);
-              fs.readFile(filePath, 'utf8', (err, data) => {
-                  if (err) {
-                      return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
-                  }
-  
-                  const parser = new GiftParser(options.showTokenize, options.showSymbols);
-                  parser.parse(data, file);
-                  parser.checkFormat(file);
-              });
-          });
-      });
+        try {
+            const examen = new Examen();
+            examen.chargeAllFolderQuestions(dataFolderPath, true);
+        } catch (error) {
+            logger.error(`Erreur : ${error.message}`);
+        }
     })
 
     // list
     .command('list', 'Afficher toutes les questions')
     .action(({ logger }) => {
-        fs.readdir(dataFolderPath, (err, files) => {
-        if (err) {
-            return logger.error(`Erreur lors de la lecture du dossier : ${err}`);
+        try {
+            const examen = new Examen();
+            const allQuestions = examen.chargeAllFolderQuestions(dataFolderPath, false);
+            examen.logQuestions(allQuestions); 
+        } catch (error) {
+            logger.error(`Erreur : ${error.message}`);
         }
+    })
 
-        files.forEach(file => {
-            const filePath = path.join(dataFolderPath, file);
-            fs.readFile(filePath, 'utf8', (err, data) => {
-                if (err) {
-                    return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
-                }
-                const examen = new Examen();
-                const questions = examen.chargeAllQuestions(data, file); 
-                examen.logQuestions(questions); 
-            });
-        });
-    });
+    //view
+    .command('view', 'Afficher les questions dans la collection personnelle')
+    .action(({ logger }) => {
+        try {
+            const file = 'personal_collection.json';
+            let questions = [];
+            if (fs.existsSync(personalCollectionPath)) {
+                fs.readFile(personalCollectionPath, 'utf8', (err, data) => {
+                    if (err) {
+                        return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
+                    }
+                    const examen = new Examen();
+                    const questions = examen.chargeExamQuestions(data, file, false); 
+                    console.log('La collection personnelle :')
+                    examen.logQuestions(questions); 
+                });
+            } else {
+                console.log(`Le fichier de collection personnelle n est pas trouvable à l adresse suivante : ${chalk.red(personalCollectionPath)}`);
+            }
+        } catch (error) {
+            logger.error(`Erreur : ${error.message}`);
+        }
     })
    
     // search
     .command('search', 'Rechercher des questions par mot-clé')
     .argument('<motCle>', 'Mot-clé pour rechercher des questions')
-    .action(async ({ logger, args }) => {
+    .action( ({ logger, args }) => {
         try {   
-            // Read directory
-            const files = await fs.promises.readdir(dataFolderPath);
-    
-            // Process each file
-            const allQuestions = [];
-            const promises = files.map(async (file) => {
-                try {
-                    const filePath = path.join(dataFolderPath, file);
-                    const data = await fs.promises.readFile(filePath, 'utf8');
-                    const examen = new Examen();
-                    const fileQuestions = examen.chargeAllQuestions(data, file);
-                    return fileQuestions; 
-                } catch (err) {
-                    logger.warn(`Erreur de lecture du fichier ${file}: ${err.message}`);
-                    return []; 
-                }
-            });
-    
-            // Await all promises
-            const results = await Promise.all(promises);
-            results.forEach(questionSet => {
-                allQuestions.push(...questionSet);
-            });
-    
-            // Log and search questions
             const examen = new Examen();
+            const allQuestions = examen.chargeAllFolderQuestions(dataFolderPath, false);
             logger.info(`Total questions chargées : ${allQuestions.length}`);
-    
             const searchResults = examen.search(allQuestions, args.motCle);
             if (searchResults.length === 0) {
                 logger.info(`Aucune question trouvée pour le mot-clé : "${args.motCle}".`);
@@ -107,84 +85,96 @@ cli
             }
     
             // Save search results
-            await fs.promises.writeFile(
-                TEMP_STORAGE_PATH,
-                JSON.stringify(searchResults, null, 2),
-                'utf8'
-            );
-            logger.info(`Résultats enregistrés dans : ${TEMP_STORAGE_PATH}`);
+            // await fs.promises.writeFile(
+            //     tempStoragePath,
+            //     JSON.stringify(searchResults, null, 2),
+            //     'utf8'
+            // );
+            logger.info(`Résultats enregistrés dans : ${tempStoragePath}`);
         } catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
     })
     
+    
+    // add
+    // .command('add', 'Ajouter une question à la collection personnelle depuis les résultats de recherche')
+    // .argument('<index>', 'Indice de la question à ajouter (basé sur les résultats de search)')
+    // .action(({ logger, args }) => {
+    //     try {
+    //         // Check if temp storage file exists
+    //         if (!fs.existsSync(tempStoragePath)) {
+    //             throw new Error("Aucun résultat de recherche disponible. Lancez d'abord une commande `search`.");
+    //         }
+    
+    //         // Read the saved search results
+    //         const savedResults = JSON.parse(fs.readFileSync(tempStoragePath, 'utf-8'));
+    
+    //         const questionIndex = parseInt(args.index, 10) - 1; // Indices 1-based
+    
+    //         if (questionIndex < 0 || questionIndex >= savedResults.length) {
+    //             throw new Error(`Indice ${args.index} invalide. Assurez-vous qu'il est compris entre 1 et ${savedResults.length}.`);
+    //         }
+    
+    //         const question = new Question(
+    //             savedResults[questionIndex].titre,
+    //             savedResults[questionIndex].texte,
+    //             savedResults[questionIndex].reponses,
+    //             savedResults[questionIndex].bonnesReponses,
+    //             savedResults[questionIndex].typeDeQuestion
+    //         );
+    
+    //         // Load existing collection
+    //         let collection = [];
+    //         if (fs.existsSync(personalCollectionPath)) {
+    //             collection = JSON.parse(fs.readFileSync(personalCollectionPath, 'utf-8'));
+    //         }
+    
+    //         // Check if question already exists
+    //         if (!collection.some(q => q.titre === question.titre)) {
+    //             collection.push(question);
+    //             fs.writeFileSync(personalCollectionPath, JSON.stringify(collection), 'utf-8');
+    //             logger.info(`Question "${question.titre}" ajoutée à la collection personnelle.`);
+    //         } else {
+    //             logger.info(`La question "${question.titre}" existe déjà dans la collection.`);
+    //         }
+    //     } catch (error) {
+    //         logger.error(`Erreur : ${error.message}`);
+    //     }
+    // })
 
-    .command('view', 'Afficher les questions dans la collection personnelle')
-    .action(({ logger }) => {
-        try {
-            // Load collection from file
-            let questions = [];
-            if (fs.existsSync(PERSONAL_COLLECTION_PATH)) {
-                const rawData = fs.readFileSync(PERSONAL_COLLECTION_PATH, 'utf-8');
-                questions = JSON.parse(rawData).map(q => 
-                    new Question(q.titre, q.texte, q.reponses, q.bonnesReponses, q.typeDeQuestion)
-                );
-            }
-    
-            if (questions.length === 0) {
-                logger.info("Aucune question dans la collection personnelle.");
-            } else {
-                questions.forEach((question, index) => {
-                    logger.info(`\n[Question ${index + 1}]`);
-                    logger.info(`Titre : ${question.titre}`);
-                    logger.info(`Texte : ${question.texte}`);
-                    logger.info(`Type : ${question.typeDeQuestion}`);
-                    logger.info(`Réponses possibles : ${question.reponses.join(', ')}`);
-                    logger.info(`Bonne(s) réponse(s) : ${question.bonnesReponses.join(', ')}`);
-                });
-            }
-        } catch (error) {
-            logger.error(`Erreur : ${error.message}`);
-        }
-    })
-    
-    // Modify the add command
     .command('add', 'Ajouter une question à la collection personnelle depuis les résultats de recherche')
-    .argument('<index>', 'Indice de la question à ajouter (basé sur les résultats de search)')
+    .argument('<id>', 'ID de la question à ajouter')
     .action(({ logger, args }) => {
-        try {
-            // Check if temp storage file exists
-            if (!fs.existsSync(TEMP_STORAGE_PATH)) {
-                throw new Error("Aucun résultat de recherche disponible. Lancez d'abord une commande `search`.");
-            }
-    
+        try {  
             // Read the saved search results
-            const savedResults = JSON.parse(fs.readFileSync(TEMP_STORAGE_PATH, 'utf-8'));
-    
-            const questionIndex = parseInt(args.index, 10) - 1; // Indices 1-based
-    
-            if (questionIndex < 0 || questionIndex >= savedResults.length) {
-                throw new Error(`Indice ${args.index} invalide. Assurez-vous qu'il est compris entre 1 et ${savedResults.length}.`);
+            if (fs.existsSync(tempStoragePath)) {
+                fs.readFile(tempStoragePath, 'utf8', (err, data) => {
+                    if (err) {
+                        return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
+                    }
+                    const parser = new GiftParser();
+                    const searchResults = parser.parse(data, file);
+                    if (searchResults.length === 0) {
+                        console.log(chalk('Aucune question gardée en mémoire'))
+                        return;
+                    }
+                });
+            } else {
+                console.log(`Le fichier temporaire contenant les résultats de recherche n est pas trouvable à l adresse suivante : ${chalk.red(personalCollectionPath)}`);
+                return;
             }
-    
-            const question = new Question(
-                savedResults[questionIndex].titre,
-                savedResults[questionIndex].texte,
-                savedResults[questionIndex].reponses,
-                savedResults[questionIndex].bonnesReponses,
-                savedResults[questionIndex].typeDeQuestion
-            );
     
             // Load existing collection
             let collection = [];
-            if (fs.existsSync(PERSONAL_COLLECTION_PATH)) {
-                collection = JSON.parse(fs.readFileSync(PERSONAL_COLLECTION_PATH, 'utf-8'));
+            if (fs.existsSync(personalCollectionPath)) {
+                collection = JSON.parse(fs.readFileSync(personalCollectionPath, 'utf-8'));
             }
     
             // Check if question already exists
             if (!collection.some(q => q.titre === question.titre)) {
                 collection.push(question);
-                fs.writeFileSync(PERSONAL_COLLECTION_PATH, JSON.stringify(collection), 'utf-8');
+                fs.writeFileSync(personalCollectionPath, JSON.stringify(collection), 'utf-8');
                 logger.info(`Question "${question.titre}" ajoutée à la collection personnelle.`);
             } else {
                 logger.info(`La question "${question.titre}" existe déjà dans la collection.`);
@@ -201,8 +191,8 @@ cli
         try {
             // Load existing collection
             let collection = [];
-            if (fs.existsSync(PERSONAL_COLLECTION_PATH)) {
-                collection = JSON.parse(fs.readFileSync(PERSONAL_COLLECTION_PATH, 'utf-8'));
+            if (fs.existsSync(personalCollectionPath)) {
+                collection = JSON.parse(fs.readFileSync(personalCollectionPath, 'utf-8'));
             }
     
             // Filter out the question
@@ -210,7 +200,7 @@ cli
             collection = collection.filter(q => q.titre !== args.titre);
     
             if (collection.length < initialLength) {
-                fs.writeFileSync(PERSONAL_COLLECTION_PATH, JSON.stringify(collection), 'utf-8');
+                fs.writeFileSync(personalCollectionPath, JSON.stringify(collection), 'utf-8');
                 logger.info(`Question "${args.titre}" retirée de la collection personnelle.`);
             } else {
                 logger.info(`Aucune question trouvée avec le titre "${args.titre}".`);
@@ -227,8 +217,8 @@ cli
         try {
             // Load existing collection
             let collection = [];
-            if (fs.existsSync(PERSONAL_COLLECTION_PATH)) {
-                const rawData = fs.readFileSync(PERSONAL_COLLECTION_PATH, 'utf-8');
+            if (fs.existsSync(personalCollectionPath)) {
+                const rawData = fs.readFileSync(personalCollectionPath, 'utf-8');
                 collection = JSON.parse(rawData).map(q => 
                     new Question(q.titre, q.texte, q.reponses, q.bonnesReponses, q.typeDeQuestion)
                 );
