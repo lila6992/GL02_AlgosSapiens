@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const GiftParser = require('./GiftParser');
 
 class Question {
     constructor(titre, texte, reponses, bonnesReponses, typeDeQuestion) {
@@ -136,6 +137,74 @@ class CollectionQuestion {
         fs.writeFileSync(cheminFichier, contenuGIFT, 'utf-8');
         console.log(`Fichier GIFT généré : ${cheminFichier}`);
     }
-}
-
+    /**
+     * Charge toutes les questions à partir d'un dossier et retourne une instance de CollectionQuestion.
+     * @param {string} dossier - Chemin vers le dossier contenant les fichiers GIFT.
+     * @returns {CollectionQuestion}
+     */
+    static chargerDepuisDossier(dossier) {
+        const collection = new CollectionQuestion();
+        const parser = new GiftParser();
+    
+        const fichiers = fs.readdirSync(dossier).filter(file => file.endsWith('.gift'));
+    
+        fichiers.forEach((fichier) => {
+            const chemin = path.join(dossier, fichier);
+            const contenu = fs.readFileSync(chemin, 'utf-8');
+            const questionsParsees = parser.parse(contenu, fichier);
+    
+            questionsParsees.forEach((q) => {
+                try {
+                    // Vérifications et corrections
+                    if (!q.title || !q.statement || !q.type) {
+                        throw new Error("Champs obligatoires manquants dans la question.");
+                    }
+    
+                    // Normalisation des réponses possibles
+                    const reponses = [...(q.choice || []), ...(q.answer || [])];
+                    const bonnesReponses = q.answer || [];
+                    const type = this.normaliserType(q.type);
+    
+                    if (reponses.length < 1 || bonnesReponses.length < 1) {
+                        throw new Error("Réponses manquantes ou invalides.");
+                    }
+    
+                    // Création de la question
+                    const question = new Question(
+                        q.title,
+                        q.statement,
+                        reponses,
+                        bonnesReponses,
+                        type
+                    );
+                    collection.ajouterQuestion(question);
+                } catch (error) {
+                    console.warn(`Question ignorée dans "${fichier}" : ${error.message}`);
+                }
+            });
+        });
+    
+        return collection;
+    }
+    
+    /**
+     * Normalise le type de question pour correspondre aux standards attendus.
+     * @param {string} type - Type de question brut.
+     * @returns {string} - Type normalisé.
+     */
+    static normaliserType(type) {
+        switch (type) {
+            case 'qcml':
+                return 'choix_multiple';
+            case 'true_false':
+                return 'vrai_faux';
+            case 'numerique':
+                return 'numerique';
+            case 'texte':
+                return 'mot_manquant';
+            default:
+                return 'autre';
+        }
+    }
+}   
 module.exports = { Question, CollectionQuestion };
