@@ -1,10 +1,16 @@
 const fs = require('fs');
 const path = require('path');
+const colors = require('colors');
+const cli = require('@caporal/core').default;
+
 const TEMP_STORAGE_PATH = path.join(__dirname, 'temp_search_results.json');
 const PERSONAL_COLLECTION_PATH = path.join(__dirname, 'personal_collection.json');
-const cli = require('@caporal/core').default;
-const {Question, CollectionQuestion } = require('./Question');
 const dataFolderPath = path.join(__dirname, 'SujetB_data');
+
+const GiftParser = require('./GiftParser');
+const Examen = require('./Examen');
+const {Question, CollectionQuestion } = require('./Question');
+
 let rechercheResultats = null;
 const collectionPersonnelle = new CollectionQuestion();
 
@@ -12,26 +18,50 @@ cli
     .version('1.0.0')
     .description('Outil CLI pour gérer les fichiers GIFT')
 
-    // Commande `list` pour afficher toutes les questions parsées
-    .command('list', 'Afficher toutes les questions parsées')
-    .action(({ logger }) => {
-        try {
-            const collection = CollectionQuestion.chargerDepuisDossier(dataFolderPath);
-            collection.questions.forEach((question, index) => {
-                logger.info(`\n[Question ${index + 1}]`);
-                logger.info(`Titre : ${question.titre}`);
-                logger.info(`Texte : ${question.texte}`);
-                logger.info(`Type : ${question.typeDeQuestion}`);
-                logger.info(`Réponses possibles : ${question.reponses.join(', ')}`);
-                logger.info(`Bonne(s) réponse(s) : ${question.bonnesReponses.join(', ')}`);
-            });
+    // check
+    .command('check', 'Vérifier si tous les fichiers GIFT du dossier sont valides')
+    .option('-s, --showSymbols', 'Afficher les symboles analysés à chaque étape', { validator: cli.BOOLEAN, default: false })
+    .option('-t, --showTokenize', 'Afficher les résultats de la tokenisation', { validator: cli.BOOLEAN, default: false })
+    .action(({ options, logger }) => {
+      fs.readdir(dataFolderPath, (err, files) => {
+          if (err) {
+              return logger.error(`Erreur lors de la lecture du dossier : ${err}`);
+          }
+  
+          files.forEach(file => {
+              const filePath = path.join(dataFolderPath, file);
+              fs.readFile(filePath, 'utf8', (err, data) => {
+                  if (err) {
+                      return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
+                  }
+  
+                  const parser = new GiftParser(options.showTokenize, options.showSymbols);
+                  parser.parse(data, file);
+                  parser.checkFormat(file);
+              });
+          });
+      });
+    })
 
-            if (collection.questions.length === 0) {
-                logger.info("Aucune question trouvée dans les fichiers du dossier.");
-            }
-        } catch (error) {
-            logger.error(`Erreur lors du chargement des questions : ${error.message}`);
+    // Commande 'list'
+    .command('list', 'Afficher toutes les questions')
+    .action(({ logger }) => {
+        fs.readdir(dataFolderPath, (err, files) => {
+        if (err) {
+            return logger.error(`Erreur lors de la lecture du dossier : ${err}`);
         }
+
+        files.forEach(file => {
+            const filePath = path.join(dataFolderPath, file);
+            fs.readFile(filePath, 'utf8', (err, data) => {
+                if (err) {
+                    return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
+                }
+                const examen = new Examen();
+                examen.listAllQuestions(data, file); 
+            });
+        });
+    });
     })
 
     .command('search', 'Rechercher des questions par mot-clé')

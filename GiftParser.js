@@ -38,7 +38,7 @@ class GiftParser {
             return this.parsedQuestion;
         } catch (error) {
             this.incrementErrorCount(`Fatal error in parsing ${fileName}: ${error.message}`);
-            // this.checkFormat(fileName);
+            this.checkFormat(fileName);
             return [];
         }
     }
@@ -155,6 +155,21 @@ class GiftParser {
         }
 
         return true;
+    }
+
+    normaliserType(type) {
+        switch (type) {
+            case 'qcml':
+                return 'choix_multiple';
+            case 'true_false':
+                return 'vrai_faux';
+            case 'numerique':
+                return 'numerique';
+            case 'texte':
+                return 'mot_manquant';
+            default:
+                return 'autre';
+        }
     }
 
     title(input) {

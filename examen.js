@@ -1,82 +1,45 @@
 const fs = require('fs');
 const path = require('path');
-const { CollectionQuestion, Question } = require('./question');
+const GiftParser = require('./GiftParser');
+const { CollectionQuestion, Question } = require('./Question');
 
 class Examen {
     constructor(nomFichier) {
         this.nomFichier = nomFichier;
         this.questions = new CollectionQuestion();
     }
+    
+    listAllQuestions = function (data, file) {
+        const parser = new GiftParser();
+        parser.parse(data, file); 
 
-    /**
-     * Charge un fichier GIFT et parse les questions.
-     * @returns {void}
-     */
-    chargerDepuisFichier() {
-        const cheminFichier = path.resolve('C:/projects/GL02/Projet/GL02_AlgosSapiens/examens', `${this.nomFichier}.gift`);
-    
-        if (!fs.existsSync(cheminFichier)) {
-            throw new Error(`Fichier ${this.nomFichier}.gift non trouvé dans le dossier examens.`);
-        }
-    
-        const contenu = fs.readFileSync(cheminFichier, 'utf-8');
-        const questions = contenu.split(/\n\n+/); // Sépare chaque question par deux lignes vides
-    
-        questions.forEach((questionTexte) => {
-            try {
-                const match = questionTexte.match(/^::(.*?)::\s*(.*?)\s*\{([\s\S]*)\}$/m);
-                if (!match) {
-                    console.warn("Format de question non reconnu, ignorée :", questionTexte);
-                    return;
-                }
-    
-                const titre = match[1];
-                const texte = match[2];
-                const blocReponses = match[3].trim();
-    
-                let reponses = [];
-                let bonnesReponses = [];
-                let typeDeQuestion = "choix_multiple";
-    
-                if (blocReponses.includes('=')) {
-                    // Choix multiple ou mot manquant
-                    const lignes = blocReponses.split('\n');
-                    lignes.forEach((ligne) => {
-                        if (ligne.startsWith('=')) {
-                            bonnesReponses.push(ligne.slice(1).trim());
-                            reponses.push(ligne.slice(1).trim());
-                        } else if (ligne.startsWith('~')) {
-                            reponses.push(ligne.slice(1).trim());
-                        }
-                    });
-                    typeDeQuestion = bonnesReponses.length > 1 ? "choix_multiple" : "mot_manquant";
-                } else if (blocReponses.includes('#')) {
-                    // Question numérique
-                    const reponseNumerique = blocReponses.match(/#(\d+)/);
-                    if (reponseNumerique) {
-                        bonnesReponses.push(reponseNumerique[1]);
-                        reponses.push(reponseNumerique[1]);
-                        typeDeQuestion = "numerique";
-                    }
-                } else if (blocReponses.includes('=true') || blocReponses.includes('=false')) {
-                    // Question vrai/faux
-                    bonnesReponses.push(blocReponses.includes('=true') ? "Vrai" : "Faux");
-                    reponses = ["Vrai", "Faux"];
-                    typeDeQuestion = "vrai_faux";
-                } else {
-                    console.warn("Type de question non supporté, ignorée :", questionTexte);
-                    return;
-                }
-    
-                // Création et ajout de la question
-                const question = new Question(titre, texte, reponses, bonnesReponses, typeDeQuestion);
-                this.questions.ajouterQuestion(question);
-            } catch (error) {
-                console.error("Erreur lors du parsing d'une question :", error.message);
+        const parsedQuestions = parser.parse(data, file);
+        parsedQuestions.forEach((question, index) => {
+            // console.log(JSON.stringify(question, null, 2));
+            console.log(`\n`);
+            console.log(`ID : ${String(question.id)}`);
+            console.log(`Fichier source : ${question.file}`);
+            console.log(`Titre : ${String(question.title)}`);
+            console.log(`Type : ${question.type}`);
+            console.log(`Enoncé : ${question.statement}`);
+        
+            if (Array.isArray(question.answer) && question.answer.length > 0) {
+                console.log("Réponses :");
+                question.answer.forEach(ans => {
+                    console.log(`\t ✔️ ${ans}`);
+                });
             }
+        
+            if (Array.isArray(question.choice) && question.choice.length > 0) {
+                console.log("Autres choix :");
+                question.choice.forEach(indivChoice => {
+                    console.log(`\t❌ ${indivChoice}`);
+                });
+            }
+        
         });
     }
-    
+
     /**
      * Vérifie la validité de l'examen selon les critères définis.
      * @returns {Object} - Résultat de la vérification (booléen et détails).
