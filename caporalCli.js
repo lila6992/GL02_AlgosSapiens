@@ -3,9 +3,9 @@ const path = require('path');
 const colors = require('colors');
 const cli = require('@caporal/core').default;
 
-const TEMP_STORAGE_PATH = path.join(__dirname, 'temp_search_results.json');
-const PERSONAL_COLLECTION_PATH = path.join(__dirname, 'personal_collection.json');
-const dataFolderPath = path.join(__dirname, 'SujetB_data');
+const TEMP_STORAGE_PATH = path.join(__dirname, 'data', 'temp_search_results.json');
+const PERSONAL_COLLECTION_PATH = path.join(__dirname, 'data', 'personal_collection.json');
+const dataFolderPath = path.join(__dirname, 'data', 'gift');
 
 const GiftParser = require('./GiftParser');
 const Examen = require('./Examen');
@@ -64,35 +64,7 @@ cli
         });
     });
     })
-
-    // .command('search', 'Rechercher des questions par mot-clé')
-    // .argument('<motCle>', 'Mot-clé pour rechercher des questions')
-    // .action(({ logger, args }) => {
-    //     try {
-    //         const collection = CollectionQuestion.chargerDepuisDossier(dataFolderPath);
-    //         const resultats = collection.rechercher(args.motCle);
-    
-    //         // Save search results to a temp file
-    //         fs.writeFileSync(TEMP_STORAGE_PATH, JSON.stringify(resultats.questions), 'utf-8');
-    
-    //         if (resultats.questions.length === 0) {
-    //             logger.info(`Aucune question trouvée pour le mot-clé : "${args.motCle}".`);
-    //         } else {
-    //             logger.info(`Nombre de résultats : ${resultats.questions.length}`);
-    //             resultats.questions.forEach((question, index) => {
-    //                 logger.info(`\n[Résultat ${index + 1}]`);
-    //                 logger.info(`Titre : ${question.titre}`);
-    //                 logger.info(`Texte : ${question.texte}`);
-    //                 logger.info(`Type : ${question.typeDeQuestion}`);
-    //                 logger.info(`Réponses possibles : ${question.reponses.join(', ')}`);
-    //                 logger.info(`Bonne(s) réponse(s) : ${question.bonnesReponses.join(', ')}`);
-    //             });
-    //         }
-    //     } catch (error) {
-    //         logger.error(`Erreur lors de la recherche : ${error.message}`);
-    //     }
-    // })
-    
+   
     // search
     .command('search', 'Rechercher des questions par mot-clé')
     .argument('<motCle>', 'Mot-clé pour rechercher des questions')
@@ -146,7 +118,6 @@ cli
         }
     })
     
-
 
     .command('view', 'Afficher les questions dans la collection personnelle')
     .action(({ logger }) => {
