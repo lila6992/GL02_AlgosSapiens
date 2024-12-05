@@ -132,9 +132,6 @@ class GiftParser {
         else if (type === undefined)
             type = 'texte';
 
-        // Prepare description by joining statement
-        const description = statement.join(' ');
-
         const questionObj = {
             id: uuidv4(),
             file: fileName,

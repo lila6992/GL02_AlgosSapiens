@@ -40,7 +40,8 @@ cli
                   }
   
                   const parser = new GiftParser(options.showTokenize, options.showSymbols);
-                  parser.parse(data, file); // On passe le nom du fichier au parser pour l'afficher dans les erreurs
+                  parser.parse(data, file);
+                  parser.checkFormat(file);
               });
           });
       });
