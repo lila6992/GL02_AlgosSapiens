@@ -9,7 +9,7 @@ const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 
 const GiftParser = require('./GiftParser');
-const Examen = require('./Examen');
+const Examen = require('./CollectionQuestions');
 const {Question, CollectionQuestion } = require('./Question');
 
 let rechercheResultats = null;
