@@ -43,7 +43,7 @@ cli
       });
     })
 
-    // Commande 'list'
+    // list
     .command('list', 'Afficher toutes les questions')
     .action(({ logger }) => {
         fs.readdir(dataFolderPath, (err, files) => {
@@ -58,40 +58,96 @@ cli
                     return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
                 }
                 const examen = new Examen();
-                examen.listAllQuestions(data, file); 
+                const questions = examen.chargeAllQuestions(data, file); 
+                examen.logQuestions(questions); 
             });
         });
     });
     })
 
+    // .command('search', 'Rechercher des questions par mot-clé')
+    // .argument('<motCle>', 'Mot-clé pour rechercher des questions')
+    // .action(({ logger, args }) => {
+    //     try {
+    //         const collection = CollectionQuestion.chargerDepuisDossier(dataFolderPath);
+    //         const resultats = collection.rechercher(args.motCle);
+    
+    //         // Save search results to a temp file
+    //         fs.writeFileSync(TEMP_STORAGE_PATH, JSON.stringify(resultats.questions), 'utf-8');
+    
+    //         if (resultats.questions.length === 0) {
+    //             logger.info(`Aucune question trouvée pour le mot-clé : "${args.motCle}".`);
+    //         } else {
+    //             logger.info(`Nombre de résultats : ${resultats.questions.length}`);
+    //             resultats.questions.forEach((question, index) => {
+    //                 logger.info(`\n[Résultat ${index + 1}]`);
+    //                 logger.info(`Titre : ${question.titre}`);
+    //                 logger.info(`Texte : ${question.texte}`);
+    //                 logger.info(`Type : ${question.typeDeQuestion}`);
+    //                 logger.info(`Réponses possibles : ${question.reponses.join(', ')}`);
+    //                 logger.info(`Bonne(s) réponse(s) : ${question.bonnesReponses.join(', ')}`);
+    //             });
+    //         }
+    //     } catch (error) {
+    //         logger.error(`Erreur lors de la recherche : ${error.message}`);
+    //     }
+    // })
+    
+    // search
     .command('search', 'Rechercher des questions par mot-clé')
     .argument('<motCle>', 'Mot-clé pour rechercher des questions')
-    .action(({ logger, args }) => {
-        try {
-            const collection = CollectionQuestion.chargerDepuisDossier(dataFolderPath);
-            const resultats = collection.rechercher(args.motCle);
+    .action(async ({ logger, args }) => {
+        try {   
+            // Read directory
+            const files = await fs.promises.readdir(dataFolderPath);
     
-            // Save search results to a temp file
-            fs.writeFileSync(TEMP_STORAGE_PATH, JSON.stringify(resultats.questions), 'utf-8');
+            // Process each file
+            const allQuestions = [];
+            const promises = files.map(async (file) => {
+                try {
+                    const filePath = path.join(dataFolderPath, file);
+                    const data = await fs.promises.readFile(filePath, 'utf8');
+                    const examen = new Examen();
+                    const fileQuestions = examen.chargeAllQuestions(data, file);
+                    return fileQuestions; 
+                } catch (err) {
+                    logger.warn(`Erreur de lecture du fichier ${file}: ${err.message}`);
+                    return []; 
+                }
+            });
     
-            if (resultats.questions.length === 0) {
+            // Await all promises
+            const results = await Promise.all(promises);
+            results.forEach(questionSet => {
+                allQuestions.push(...questionSet);
+            });
+    
+            // Log and search questions
+            const examen = new Examen();
+            logger.info(`Total questions chargées : ${allQuestions.length}`);
+    
+            const searchResults = examen.search(allQuestions, args.motCle);
+            if (searchResults.length === 0) {
                 logger.info(`Aucune question trouvée pour le mot-clé : "${args.motCle}".`);
             } else {
-                logger.info(`Nombre de résultats : ${resultats.questions.length}`);
-                resultats.questions.forEach((question, index) => {
-                    logger.info(`\n[Résultat ${index + 1}]`);
-                    logger.info(`Titre : ${question.titre}`);
-                    logger.info(`Texte : ${question.texte}`);
-                    logger.info(`Type : ${question.typeDeQuestion}`);
-                    logger.info(`Réponses possibles : ${question.reponses.join(', ')}`);
-                    logger.info(`Bonne(s) réponse(s) : ${question.bonnesReponses.join(', ')}`);
-                });
+                logger.info(`Nombre de résultats : ${searchResults.length}`);
+                examen.logQuestions(searchResults);
             }
+    
+            // Save search results
+            await fs.promises.writeFile(
+                TEMP_STORAGE_PATH,
+                JSON.stringify(searchResults, null, 2),
+                'utf8'
+            );
+            logger.info(`Résultats enregistrés dans : ${TEMP_STORAGE_PATH}`);
         } catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
     })
     
+
+
     .command('view', 'Afficher les questions dans la collection personnelle')
     .action(({ logger }) => {
         try {
