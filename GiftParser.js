@@ -271,7 +271,7 @@ class GiftParser {
             console.log(formatResult);
         } else {
             const errorList = this.errorMessages.join(' | ');
-            formatResult = `${chalk.white(fileName)}: ${chalk.red('WRONG format')} | ${chalk.red(this.errorCount)} ${chalk.red('errors: ')} ${chalk.magenta(errorList)}`;
+            formatResult = `${chalk.white(fileName)}: ${chalk.red(this.errorCount)} ${chalk.red('errors: ')} ${chalk.magenta(errorList)}`;
             console.log(formatResult);
         }
     

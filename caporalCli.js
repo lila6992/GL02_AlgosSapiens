@@ -15,14 +15,21 @@ cli
 
     // check
     .command('check', 'Vérifier si tous les fichiers GIFT du dossier sont valides')
-    .option('-s, --showSymbols', 'Afficher les symboles analysés à chaque étape', { validator: cli.BOOLEAN, default: false })
-    .option('-t, --showTokenize', 'Afficher les résultats de la tokenisation', { validator: cli.BOOLEAN, default: false })
-    .action(({ options, logger }) => {
+    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
+    .option('-f, --format', 'Vérifier le formattage du fichier gift', { validator: cli.BOOLEAN, default: false })
+    .action(({ args, options, logger }) => {
+        const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
         try {
             const collectionQuestions = new CollectionQuestions();
-            collectionQuestions.chargeAllFolderQuestions(true);
-        } catch (error) {
-            logger.error(`Erreur : ${error.message}`);
+            const data = fs.readFileSync(collectionPath, 'utf8'); 
+            const questions = collectionQuestions.chargeExamQuestions(data, collectionPath, false);
+            if (options.format) {
+                collectionQuestions.chargeExamQuestions(data, collectionPath, true); 
+            }
+            collectionQuestions.verifyQuality(questions);
+        } catch (err) {
+            console.error('Erreur de lecture du fichier :', err);
+            return 0; 
         }
     })
 
