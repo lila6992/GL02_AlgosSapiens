@@ -3,13 +3,11 @@ const path = require('path');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
 const { VCard, GestionVCard } = require('./vCard');
-
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
-
 const CollectionQuestions = require('./CollectionQuestions');
-const {Question, CollectionQuestion } = require('./Question');
 const gestionVCard = new GestionVCard();
+const Examen = require('./CollectionQuestions');
 
 cli
     .version('1.0.0')
@@ -255,6 +253,6 @@ cli
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
-    });
+    })
 
 cli.run(process.argv.slice(2));

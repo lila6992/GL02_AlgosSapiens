@@ -1,13 +1,118 @@
 [
   {
-    "id": "U9-p95-Third_cond-4-7",
-    "file": "U9-p95-Third_cond-4.gift",
-    "questionIndex": 7,
-    "titre": "A: I was doing something else so I didn't hear what she said. (pay attention)",
+    "id": "u9-p94-listening-4-7",
+    "file": "U9-p94-Listening.gift",
+    "questionIndex": 1,
+    "titre": "U9 p94 Listening 4.7",
+    "typeDeQuestion": "qcm1",
+    "texte": " Max says that a ten-year investigation has shown that lucky people (1) ",
+    "bonnesReponses": [
+      "look for good opportunities."
+    ],
+    "reponses": [
+      "believe they will succeed.",
+      "look for good opportunities.",
+      "depend very little on talent."
+    ],
+    "formatGift": "::U9 p94 Listening 4.7::Max says that a ten-year investigation has shown that lucky people {\r\n  ~ believe they will succeed.\r\n  = look for good opportunities.\r\n  ~ depend very little on talent.\r\n}"
+  },
+  {
+    "id": "u7-p77-it-there-is-gr-3",
+    "file": "U7-p77-It is,there is.gift",
+    "questionIndex": 2,
+    "titre": "U7 p77 [It/There is] GR+.3",
+    "typeDeQuestion": "qcm1",
+    "texte": " (1) ~ might be a traffic jam unless we leave early.",
+    "bonnesReponses": [
+      "There"
+    ],
+    "reponses": [
+      "It",
+      "There"
+    ],
+    "formatGift": "::U7 p77 [It/There is] GR+.3::{~It ~=There} might be a traffic jam unless we leave early."
+  },
+  {
+    "id": "u7-p77-so-such-too-enough-very-1-8",
+    "file": "U7-p76_77-So,such,too,enough.gift",
+    "questionIndex": 3,
+    "titre": "U7 p77 [So,such,too,enough,very] 1.8",
+    "typeDeQuestion": "qcm1",
+    "texte": " It's a (1) ~ interesting book.",
+    "bonnesReponses": [
+      "very"
+    ],
+    "reponses": [
+      "enough",
+      "so",
+      "such",
+      "too",
+      "very"
+    ],
+    "formatGift": "::U7 p77 [So,such,too,enough,very] 1.8::It's a {~enough~so~such~too~=very} interesting book."
+  },
+  {
+    "id": "u7-p79-review-3-6",
+    "file": "U7-p79-Review-3.gift",
+    "questionIndex": 4,
+    "titre": "U7 p79 Review 3.6",
     "typeDeQuestion": "mot_manquant",
-    "texte": "U9 p95 4.6 Third conditional B: If ____ what she said. (1) }",
-    "bonnesReponses": [],
-    "reponses": [],
-    "formatGift": "U9 p95 4.6 Third conditional::[html]\r\n<b>A:</b> I was doing something else so I didn't hear what she said. (<i>pay attention</i>) <br>\r\n<b>B:</b> If ____ what she said.{}"
+    "texte": " You can' t just turn ___________ like this, unexpectedly, and expect me to be free. (1) ",
+    "bonnesReponses": [
+      "up"
+    ],
+    "reponses": [
+      "on",
+      "up",
+      "in",
+      "off"
+    ],
+    "formatGift": "::U7 p79 Review 3.6::You can' t just turn ___________ like this, unexpectedly, and expect me to be free.{\r\n\t~on\r\n\t=up\r\n\t~in\r\n\t~off\r\n}"
+  },
+  {
+    "id": "u3-p32-cd-03-present-perfect-vs-past-simple",
+    "file": "U3-p32-GR-Present_perfect_vs_past_simple.gift",
+    "questionIndex": 5,
+    "titre": "U3 p32 CD.03 Present perfect vs past simple",
+    "typeDeQuestion": "mot_manquant",
+    "texte": " They _____ that café for as long as I can remember. (1) ~ ",
+    "bonnesReponses": [
+      "'ve owned"
+    ],
+    "reponses": [
+      "'ve owned",
+      "owned"
+    ],
+    "formatGift": "::U3 p32 CD.03 Present perfect vs past simple::They _____ that café for as long as I can remember.{~='ve owned~owned}"
+  },
+  {
+    "id": "u8-p84-voc-linking-words-5-5",
+    "file": "U8-p84-Voc-Linking_words.gift",
+    "questionIndex": 6,
+    "titre": "U8 p84 Voc Linking words 5.5",
+    "typeDeQuestion": "ouverte",
+    "texte": " I am trying to improve my French, (1) learning Spanish.",
+    "bonnesReponses": [
+      "as well as"
+    ],
+    "reponses": [
+      "as well as"
+    ],
+    "formatGift": "::U8 p84 Voc Linking words 5.5::I am trying to improve my French, {=as well as} learning Spanish."
+  },
+  {
+    "id": "u8-p84-voc-linking-words-5-7",
+    "file": "U8-p84-Voc-Linking_words.gift",
+    "questionIndex": 8,
+    "titre": "U8 p84 Voc Linking words 5.7",
+    "typeDeQuestion": "ouverte",
+    "texte": " (1) the high salary I was offered, I decided to turn down the job.",
+    "bonnesReponses": [
+      "Despite"
+    ],
+    "reponses": [
+      "Despite"
+    ],
+    "formatGift": "::U8 p84 Voc Linking words 5.7::{=Despite} the high salary I was offered, I decided to turn down the job."
   }
 ]
