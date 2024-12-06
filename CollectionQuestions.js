@@ -5,6 +5,7 @@ const readline = require('readline');
 const path = require('path');
 const GiftParser = require('./GiftParser');
 const { CollectionQuestion, Question } = require('./Question');
+const { match } = require('assert');
 const readline = require('readline');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
@@ -247,6 +248,11 @@ class CollectionQuestions {
                     }
                 }
     
+                if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
+                    console.error('Aucune question sélectionnée dans le fichier temporaire.');
+                    return;
+                }
+
                 // Filter out questions already in the collection
                 const newQuestions = selectedQuestions.filter(newQ => 
                     !this.contientQuestions(collectionQuestions, newQ.id)
@@ -271,6 +277,71 @@ class CollectionQuestions {
             });
         });
     }
+
+
+    /**
+     * Retire des questions spécifiques d'une collection en utilisant un fichier temporaire.
+     * @param {string} collectionPath - Chemin du fichier GIFT de destination.
+     */
+    removeQuestions(collectionPath) {
+        // Read the collection file
+        fs.readFile(collectionPath, 'utf8', (err, existingData) => {
+            if (err) {
+                console.error('Erreur de lecture du fichier de collection :', err);
+                return;
+            }
+            const collectionQuestions = this.chargeExamQuestions(existingData, collectionPath, false);
+
+
+            // Read the temporary storage
+            fs.readFile(tempStoragePath, 'utf8', (err, tempData) => {
+                if (err) {
+                    if (err.code === 'ENOENT') {
+                        console.error('Le fichier temporaire n\'existe pas.');
+                    } else {
+                        console.error('Erreur de lecture du fichier temporaire :', err);
+                    }
+                    return;
+                }
+
+                let selectedQuestions = [];
+                if (tempData.trim()) {
+                    try {
+                        selectedQuestions = JSON.parse(tempData);
+                    } catch (e) {
+                        console.error('Erreur de parsing JSON du fichier temporaire :', e);
+                        return;
+                    }
+                }
+
+                if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
+                    console.error('Aucune question sélectionnée dans le fichier temporaire.');
+                    return;
+                }
+
+                // Filter out questions in the temp file from the collection
+                const updatedCollection = collectionQuestions.filter(
+                    (question) => !selectedQuestions.some(tempQ => tempQ.id === question.id)
+                );
+
+                if (updatedCollection.length === collectionQuestions.length) {
+                    console.log('Aucune question correspondante trouvée à supprimer.');
+                    return;
+                }
+
+                // Write back the updated collection
+                const updatedData = JSON.stringify(updatedCollection, null, 2);
+                fs.writeFile(collectionPath, updatedData, 'utf8', (err) => {
+                    if (err) {
+                        console.error('Erreur d\'écriture dans le fichier de collection :', err);
+                        return;
+                    }
+                    console.log(`${collectionQuestions.length - updatedCollection.length} question(s) supprimée(s) du fichier : ${collectionPath}`);
+                });
+            });
+        });
+    }
+
 
     /**
      * Crée une nouvelle collection (fichier GIFT) et y ajoute des questions.
@@ -344,6 +415,66 @@ class CollectionQuestions {
         }
     }
 
+    /**
+     * Compte le nombre de questions de chaque type dans un fichier de collection.
+     * @param {string} collectionName - Nom de la collection (sans extension).
+     * @returns {Object} - Nombre de questions par type
+     */
+    genererStats(collectionName) {
+        const collectionPath = path.join(dataFolderPath, `${collectionName}.gift`);
+        try {
+            const data = fs.readFileSync(collectionPath, 'utf8'); // Synchronous file read
+            const questions = this.chargeExamQuestions(data, collectionPath, false);
+            let stats = {
+                vrai_faux : 0,
+                ouverte : 0,
+                texte : 0,
+                match : 0,
+                numerique : 0,
+                mot_manquant : 0,
+                qcml : 0,
+                qcm2 : 0,
+                inconnu : 0
+            };
+            for (let index in questions){
+                switch (questions[index].typeDeQuestion){
+                    case 'vrai_faux' :
+                        stats.vrai_faux ++
+                        break
+                    case 'ouverte' :
+                        stats.ouverte ++
+                        break
+                    case 'texte' :
+                        stats.texte ++
+                        break
+                    case 'match' :
+                        stats.match ++
+                        break
+                    case "numerique" :
+                        stats.numerique ++
+                        break
+                    case "mot_manquant" :
+                        stats.mot_manquant ++
+                        break
+                    case "qcml" :
+                        stats.qcml ++
+                        break
+                    case "qcm2" :
+                        stats.qcm2 ++
+                        break
+                    default :
+                        stats.inconnu ++
+                        break
+                }
+            }
+            return stats;
+
+        } catch (err) {
+            console.error('Erreur de lecture du fichier :', err);
+            return 0; 
+        }
+        
+    }
 }
 
 
