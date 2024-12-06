@@ -222,14 +222,14 @@ class CollectionQuestions {
      * @param {string} collectionPath - Chemin du fichier GIFT de destination.
      */
     ajouterQuestions(collectionPath) {
-        fs.readFile(collectionPath, 'utf8', (err, data) => {
+        fs.readFile(collectionPath, 'utf8', (err, existingData) => {
             if (err) {
                 console.error('Erreur de lecture du fichier :', err);
                 return;
             }
-            const collectionQuestions = this.chargeExamQuestions(data, collectionPath, false);
+            const collectionQuestions = this.chargeExamQuestions(existingData, collectionPath, false);
     
-            // Read the temporary storage to ensure no duplicate IDs are added
+            // Read the temporary storage
             fs.readFile(tempStoragePath, 'utf8', (err, data) => {
                 if (err && err.code !== 'ENOENT') {
                     console.error('Erreur de lecture du fichier :', err);
@@ -239,25 +239,107 @@ class CollectionQuestions {
                 let selectedQuestions = [];
                 if (data) {
                     try {
-                        selectedQuestions = JSON.parse(data); // Parse selected questions if the file exists
+                        selectedQuestions = JSON.parse(data);
                     } catch (e) {
                         console.error('Erreur de parsing JSON :', e);
                         return;
                     }
                 }
-                this.logQuestions(selectedQuestions);
     
-                // Convert questions to GIFT format and write them
-                const contenuGIFT = selectedQuestions.map(q => {
-                    return `::${q.formatGift}`;  // Add "::" before the formatGift for each question
-                }).join('\n\n');  // Join each question with two new lines for separation
+                if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
+                    console.error('Aucune question sélectionnée dans le fichier temporaire.');
+                    return;
+                }
+
+                // Filter out questions already in the collection
+                const newQuestions = selectedQuestions.filter(newQ => 
+                    !this.contientQuestions(collectionQuestions, newQ.id)
+                );
+    
+                if (newQuestions.length === 0) {
+                    console.log('Toutes les questions sélectionnées existent déjà dans la collection.');
+                    return;
+                }
+    
+                this.logQuestions(newQuestions);
+    
+                // Convert new questions to GIFT format
+                const contenuGIFT = newQuestions.map(q => `::${q.formatGift}`).join('\n\n');
+    
+                // Conditionally add newlines based on whether the file is empty
+                const prefix = existingData.trim() === '' ? '' : '\n\n';
     
                 // Append the new questions to the end of the existing collection file
-                fs.appendFileSync(collectionPath, '\n\n' + contenuGIFT, 'utf-8');  // Ensure two new lines before appending
+                fs.appendFileSync(collectionPath, prefix + contenuGIFT, 'utf-8');
                 console.log(`Nouvelles questions ajoutées au fichier GIFT : ${collectionPath}`);
             });
         });
     }
+
+
+    /**
+     * Retire des questions spécifiques d'une collection en utilisant un fichier temporaire.
+     * @param {string} collectionPath - Chemin du fichier GIFT de destination.
+     */
+    removeQuestions(collectionPath) {
+        // Read the collection file
+        fs.readFile(collectionPath, 'utf8', (err, existingData) => {
+            if (err) {
+                console.error('Erreur de lecture du fichier de collection :', err);
+                return;
+            }
+            const collectionQuestions = this.chargeExamQuestions(existingData, collectionPath, false);
+
+
+            // Read the temporary storage
+            fs.readFile(tempStoragePath, 'utf8', (err, tempData) => {
+                if (err) {
+                    if (err.code === 'ENOENT') {
+                        console.error('Le fichier temporaire n\'existe pas.');
+                    } else {
+                        console.error('Erreur de lecture du fichier temporaire :', err);
+                    }
+                    return;
+                }
+
+                let selectedQuestions = [];
+                if (tempData.trim()) {
+                    try {
+                        selectedQuestions = JSON.parse(tempData);
+                    } catch (e) {
+                        console.error('Erreur de parsing JSON du fichier temporaire :', e);
+                        return;
+                    }
+                }
+
+                if (!Array.isArray(selectedQuestions) || selectedQuestions.length === 0) {
+                    console.error('Aucune question sélectionnée dans le fichier temporaire.');
+                    return;
+                }
+
+                // Filter out questions in the temp file from the collection
+                const updatedCollection = collectionQuestions.filter(
+                    (question) => !selectedQuestions.some(tempQ => tempQ.id === question.id)
+                );
+
+                if (updatedCollection.length === collectionQuestions.length) {
+                    console.log('Aucune question correspondante trouvée à supprimer.');
+                    return;
+                }
+
+                // Write back the updated collection
+                const updatedData = JSON.stringify(updatedCollection, null, 2);
+                fs.writeFile(collectionPath, updatedData, 'utf8', (err) => {
+                    if (err) {
+                        console.error('Erreur d\'écriture dans le fichier de collection :', err);
+                        return;
+                    }
+                    console.log(`${collectionQuestions.length - updatedCollection.length} question(s) supprimée(s) du fichier : ${collectionPath}`);
+                });
+            });
+        });
+    }
+
 
     /**
      * Crée une nouvelle collection (fichier GIFT) et y ajoute des questions.
