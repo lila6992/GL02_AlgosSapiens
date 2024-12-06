@@ -153,8 +153,8 @@ cli
         }
     })
 
-    // clear
-    .command('clear', 'Vider le contenu du fichier temporaire sans le supprimer')
+    // clear-selected
+    .command('clear-selected', 'Vider le contenu du fichier temporaire sans le supprimer')
     .action(({ logger }) => {
         try {
             // Vider le fichier tempStoragePath
@@ -164,10 +164,9 @@ cli
             logger.error(`Erreur lors de la tentative de vider le fichier temporaire : ${error.message}`);
         }
     })
-
     
-    // add
-    .command('add', 'Ajouter une question à une  collection')
+    // add-selected
+    .command('add-selected', 'Ajouter les questions sélectionnées d\'une collection spécifique')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .action(({ logger, args }) => {
         try {  
@@ -179,34 +178,21 @@ cli
         }
     })
     
-    // remove
-    .command('remove', 'Retirer une question de la collection personnelle')
-    .argument('<titre>', 'Titre de la question à retirer')
+    // remove-selected
+    .command('remove-selected', 'Retirer les questions sélectionnées d\'une collection spécifique')
+    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .action(({ logger, args }) => {
         try {
-            // Load existing collection
-            let collection = [];
-            if (fs.existsSync(personalCollectionPath)) {
-                collection = JSON.parse(fs.readFileSync(personalCollectionPath, 'utf-8'));
-            }
-    
-            // Filter out the question
-            const initialLength = collection.length;
-            collection = collection.filter(q => q.titre !== args.titre);
-    
-            if (collection.length < initialLength) {
-                fs.writeFileSync(personalCollectionPath, JSON.stringify(collection), 'utf-8');
-                logger.info(`Question "${args.titre}" retirée de la collection personnelle.`);
-            } else {
-                logger.info(`Aucune question trouvée avec le titre "${args.titre}".`);
-            }
+            const collectionQuestions = new CollectionQuestions();
+            const collectionPath = path.join(__dirname, 'data', 'gift', `${args.collection}.gift`); 
+            collectionQuestions.removeQuestions(collectionPath); 
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
     })
-    
-    // create
-	.command('create', 'Créer un fichier GIFT à partir des questions sélectionnées')
+
+    // create-collection
+	.command('create-collection', 'Créer un fichier GIFT à partir des questions sélectionnées')
 	.argument('<collection>', 'le nom de l\'examen')
 	.action(({ args }) => {
         const collectionQuestions = new CollectionQuestions();
