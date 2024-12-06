@@ -1,19 +1,13 @@
 const fs = require('fs');
 const path = require('path');
-const colors = require('colors');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
 
-const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
-const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
+const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 
-const GiftParser = require('./GiftParser');
 const CollectionQuestions = require('./CollectionQuestions');
 const {Question, CollectionQuestion } = require('./Question');
-
-let rechercheResultats = null;
-const collectionPersonnelle = new CollectionQuestion();
 
 cli
     .version('1.0.0')
@@ -26,7 +20,7 @@ cli
     .action(({ options, logger }) => {
         try {
             const collectionQuestions = new CollectionQuestions();
-            collectionQuestions.chargeAllFolderQuestions(dataFolderPath, true);
+            collectionQuestions.chargeAllFolderQuestions(true);
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
@@ -37,7 +31,7 @@ cli
     .action(({ logger }) => {
         try {
             const collectionQuestions = new CollectionQuestions();
-            const allQuestions = collectionQuestions.chargeAllFolderQuestions(dataFolderPath, false);
+            const allQuestions = collectionQuestions.chargeAllFolderQuestions(false);
             collectionQuestions.logQuestions(allQuestions); 
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
@@ -67,6 +61,56 @@ cli
             logger.error(`Erreur : ${error.message}`);
         }
     })
+
+    // explore
+    .command('explore', 'Afficher les questions dans la collection personnelle')
+    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
+    .action(({ logger, args }) => {
+        const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
+        try {
+            const collectionQuestions = new CollectionQuestions();
+            const data = fs.readFileSync(collectionPath, 'utf8'); 
+            const questions = collectionQuestions.chargeExamQuestions(data, collectionPath, false);
+            collectionQuestions.logQuestions(questions); 
+        } catch (err) {
+            console.error('Erreur de lecture du fichier :', err);
+            return 0; 
+        }
+    })
+
+    // countain
+    .command('countain', 'Afficher les questions dans la collection personnelle')
+    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
+    .argument('<id>', 'ID de la question')
+    .action(({ logger, args }) => {
+        const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
+        try {
+            const collectionQuestions = new CollectionQuestions();
+            const data = fs.readFileSync(collectionPath, 'utf8'); // Lecture synchronisée du fichier
+            const questions = collectionQuestions.chargeExamQuestions(data, collectionPath, false);
+            const isContained = collectionQuestions.contientQuestions(questions, args.id);
+            if (isContained) {
+                logger.info(`La question avec l'ID "${args.id}" est présente dans la collection "${args.collection}".`);
+            } else {
+                logger.info(`La question avec l'ID "${args.id}" n'est PAS présente dans la collection "${args.collection}".`);
+            }
+        } catch (err) {
+            logger.error('Erreur de lecture du fichier :', err);
+        }
+    })
+
+    // count
+    .command('count', 'Compter le nombre de questions dans une collection')
+    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
+    .action( ({ logger, args }) => {
+        try {   
+            const collectionQuestions = new CollectionQuestions();
+            const nbQuestions = collectionQuestions.compterQuestions(args.collection);
+            console.log(chalk.bold(`Total de questions dans la collection ${args.collection} : `) + chalk.gray(nbQuestions));
+        } catch (error) {
+            logger.error(`Erreur lors de la recherche : ${error.message}`);
+        }
+    })
    
     // search
     .command('search', 'Rechercher des questions par mot-clé')
@@ -74,7 +118,7 @@ cli
     .action( ({ logger, args }) => {
         try {   
             const collectionQuestions = new CollectionQuestions();
-            const allQuestions = collectionQuestions.chargeAllFolderQuestions(dataFolderPath, false);
+            const allQuestions = collectionQuestions.chargeAllFolderQuestions(false);
             logger.info(`Total questions chargées : ${allQuestions.length}`);
             const searchResults = collectionQuestions.search(allQuestions, args.motCle);
             if (searchResults.length === 0) {
@@ -94,8 +138,8 @@ cli
     .action(({ logger, args }) => {
         try {
             const collectionQuestions = new CollectionQuestions();
-            const allQuestions = collectionQuestions.chargeAllFolderQuestions(dataFolderPath, false);
-            collectionQuestions.selectQuestionsFromId(allQuestions, args.id, tempStoragePath);
+            const allQuestions = collectionQuestions.chargeAllFolderQuestions(false);
+            collectionQuestions.selectQuestionsFromId(allQuestions, args.id);
         } catch (error) {
         logger.error(`Erreur lors de la sélection des questions : ${error.message}`);
         }
@@ -108,13 +152,13 @@ cli
         try {  
             const collectionQuestions = new CollectionQuestions();
             const collectionPath = path.join(__dirname, 'data', 'gift', `${args.collection}.gift`); 
-            collectionQuestions.ajouterQuestions(collectionPath, tempStoragePath);
+            collectionQuestions.ajouterQuestions(collectionPath);
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
     })
     
-    // Modify the remove command
+    // remove
     .command('remove', 'Retirer une question de la collection personnelle')
     .argument('<titre>', 'Titre de la question à retirer')
     .action(({ logger, args }) => {
@@ -145,7 +189,7 @@ cli
 	.argument('<collection>', 'le nom de l\'examen')
 	.action(({ args }) => {
         const collectionQuestions = new CollectionQuestions();
-        collectionQuestions.createCollection(dataFolderPath, args.collection);
+        collectionQuestions.createCollection(args.collection);
 	});
 
 cli.run(process.argv.slice(2));

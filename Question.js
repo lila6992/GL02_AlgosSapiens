@@ -30,26 +30,8 @@ class CollectionQuestion {
         this.questions = [];
     }
 
-    ajouterQuestion(question) {
-        if (this.questions.some(q => q.titre === question.titre)) {
-            throw new Error(`La question "${question.titre}" existe déjà dans la collection.`);
-        }
-        this.questions.push(question);
-    }
-
     retirerQuestion(titre) {
         this.questions = this.questions.filter(q => q.titre !== titre);
-    }
-
-    afficherCollection() {
-        console.log("\nCollection actuelle :");
-        if (this.questions.length === 0) {
-            console.log("Aucune question dans la collection.");
-        } else {
-            this.questions.forEach((q, index) => {
-                console.log(`${index + 1}. ${q.titre}`);
-            });
-        }
     }
 
     naviguerEtChoisir(callback) {
@@ -87,48 +69,6 @@ class CollectionQuestion {
         };
 
         afficherQuestion();
-    }
-
-    /**
-     * Génère un fichier GIFT à partir des questions de la collection.
-     * @param {string} nomFichier - Nom du fichier GIFT à générer.
-     */
-    genererFichierGIFT(nomFichier) {
-        if (this.questions.length === 0) {
-            throw new Error("Aucune question à inclure dans le fichier GIFT.");
-        }
-
-        const dossierExamens = path.join(__dirname, 'data', 'gift');
-        if (!fs.existsSync(dossierExamens)) {
-            fs.mkdirSync(dossierExamens, { recursive: true });
-        }
-
-        const cheminFichier = path.join(dossierExamens, `${nomFichier}.gift`);
-        const contenuGIFT = this.questions.map(q => {
-            switch (q.typeDeQuestion) {
-                case 'choix_multiple':
-                    return `::${q.titre}:: ${q.texte} {\n` +
-                        q.reponses.map(r =>
-                            q.bonnesReponses.includes(r) ? `=${r}` : `~${r}`
-                        ).join('\n') +
-                        `\n}`;
-                case 'vrai_faux':
-                    return `::${q.titre}:: ${q.texte} {\n` +
-                        (q.bonnesReponses[0] === 'Vrai' ? '=true' : '=false') +
-                        `\n}`;
-                case 'numerique':
-                    return `::${q.titre}:: ${q.texte} {\n` +
-                        `#${q.bonnesReponses[0]}\n}`;
-                case 'mot_manquant':
-                    return `::${q.titre}:: ${q.texte.replace('___', `{=${q.bonnesReponses[0]}}`)}`;
-                default:
-                    throw new Error(`typeDeQuestion de question inconnu : ${q.typeDeQuestion}`);
-            }
-        }).join('\n\n');
-
-        fs.writeFileSync(cheminFichier, contenuGIFT, 'utf-8');
-        console.log(`Fichier GIFT généré : ${cheminFichier}`);
-    }
-    
+    }    
 }   
 module.exports = { Question, CollectionQuestion };

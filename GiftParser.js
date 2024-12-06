@@ -10,6 +10,12 @@ class GiftParser {
     }
 
     sanitizeFileName(fileName) {
+        const normalizedFileName = fileName.replace(/\\/g, '/');
+        // Check if entire path
+        if (normalizedFileName.includes('gift/')) {
+            fileName = normalizedFileName.split('gift/').pop();
+        }
+        // Remove the ".gift" extension if present
         return fileName.replace('.gift', '');
     }
 

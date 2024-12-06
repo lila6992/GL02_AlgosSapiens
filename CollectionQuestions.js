@@ -5,9 +5,8 @@ const path = require('path');
 const GiftParser = require('./GiftParser');
 const { CollectionQuestion, Question } = require('./Question');
 
-const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
-const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
+const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
 
 class CollectionQuestions {
     constructor(nomFichier) {
@@ -15,17 +14,29 @@ class CollectionQuestions {
         this.questions = new CollectionQuestion();
     }
     
-    chargeExamQuestions = function (data, file, check) {
+    /**
+     * Charge et parse les questions d'un fichier GIFT.
+     * @param {string} data - Contenu du fichier en texte brut.
+     * @param {string} collectionPath - Chemin du fichier pour des logs ou analyses supplémentaires.
+     * @param {boolean} check - Indique si le format des questions doit être vérifié.
+     * @returns {Array} - Liste des questions parsées.
+     */
+    chargeExamQuestions = function (data, collectionPath, check) {
         const parser = new GiftParser();
-        parser.parse(data, file); 
+        parser.parse(data, collectionPath); 
 
-        const parsedQuestions = parser.parse(data, file);
-        if (check == true) {parser.checkFormat(file);}
+        const parsedQuestions = parser.parse(data, collectionPath);
+        if (check == true) {parser.checkFormat(collectionPath);}
         this.questions = parsedQuestions;
         return parsedQuestions;
     }
 
-    chargeAllFolderQuestions(dataFolderPath, check) {
+    /**
+     * Charge toutes les questions des fichiers GIFT dans le dossier `data/gift`.
+     * @param {boolean} check - Indique si le format des questions doit être vérifié.
+     * @returns {Array} - Liste combinée de toutes les questions parsées.
+     */
+    chargeAllFolderQuestions(check) {
         try {
             const files = fs.readdirSync(dataFolderPath);
             const allQuestions = [];
@@ -48,6 +59,10 @@ class CollectionQuestions {
         }
     }
     
+    /**
+     * Affiche les informations détaillées d'une liste de questions.
+     * @param {Array} questions - Liste des questions à afficher.
+     */
     logQuestions = function (questions) {
         const transformType = (typeDeQuestion) => {
             switch (typeDeQuestion) {
@@ -68,7 +83,7 @@ class CollectionQuestions {
             console.log(`\n`);
             console.log(chalk.bold(`ID : `) + chalk.gray(String(question.id)));
             console.log(chalk.bold(`Titre : `) + chalk.gray(String(question.titre)));
-            console.log(chalk.bold(`formatGift : `) + chalk.gray(transformType(question.formatGift) || 'No format gift available'));
+            // console.log(chalk.bold(`formatGift : `) + chalk.gray(transformType(question.formatGift) || 'No format gift available'));
             console.log(chalk.bold(`typeDeQuestion : `) + chalk.gray(transformType(question.typeDeQuestion)));
             console.log(chalk.bold(`Enoncé : `) + chalk.gray(question.texte));
         
@@ -95,6 +110,12 @@ class CollectionQuestions {
         });
     }
 
+    /**
+     * Recherche des questions contenant une clé dans leur titre ou énoncé.
+     * @param {Array} questions - Liste des questions à filtrer.
+     * @param {string} searchKey - Mot-clé de recherche.
+     * @returns {Array} - Liste des questions correspondant à la recherche.
+     */
     search(questions, searchKey) {
         return questions.filter(q => 
             (q.titre && q.titre.toLowerCase().includes(searchKey.toLowerCase())) ||
@@ -102,7 +123,40 @@ class CollectionQuestions {
         );
     }
 
-    selectQuestionsFromId = function (questions, id, tempStoragePath) {
+    /**
+     * Compte le nombre de questions dans un fichier de collection.
+     * @param {string} collectionName - Nom de la collection (sans extension).
+     * @returns {number} - Nombre de questions dans la collection.
+     */
+    compterQuestions(collectionName) {
+        const collectionPath = path.join(dataFolderPath, `${collectionName}.gift`);
+        try {
+            const data = fs.readFileSync(collectionPath, 'utf8'); // Synchronous file read
+            const collectionQuestions = this.chargeExamQuestions(data, collectionPath, false);
+            return collectionQuestions.length; 
+        } catch (err) {
+            console.error('Erreur de lecture du fichier :', err);
+            return 0; 
+        }
+    }
+    
+
+    /**
+     * Vérifie si une question avec l'ID donné existe dans une liste de questions.
+     * @param {Array} questions - Liste des questions à examiner.
+     * @param {string} id - ID de la question à rechercher.
+     * @returns {boolean} - `true` si la question est trouvée, sinon `false`.
+     */
+    contientQuestions(questions, id) {
+        return questions.some((question) => question?.id === id);
+    }
+
+     /**
+     * Sélectionne des questions par ID et les stocke dans un fichier temporaire.
+     * @param {Array} questions - Liste des questions disponibles.
+     * @param {string} id - ID de la question à sélectionner.
+     */
+    selectQuestionsFromId = function (questions, id) {
         const filteredQuestions = questions.filter(question => question?.id === id);
         
         if (filteredQuestions.length === 0) {
@@ -162,7 +216,11 @@ class CollectionQuestions {
         });
     };
 
-    ajouterQuestions(collectionPath, tempStoragePath) {
+    /**
+     * Ajoute des questions à un fichier GIFT depuis un fichier temporaire.
+     * @param {string} collectionPath - Chemin du fichier GIFT de destination.
+     */
+    ajouterQuestions(collectionPath) {
         fs.readFile(collectionPath, 'utf8', (err, data) => {
             if (err) {
                 console.error('Erreur de lecture du fichier :', err);
@@ -200,31 +258,33 @@ class CollectionQuestions {
         });
     }
 
-    
-    createCollection(dataFolderPath, name) {
+    /**
+     * Crée une nouvelle collection (fichier GIFT) et y ajoute des questions.
+     * @param {string} collectionName - Nom de la nouvelle collection (sans extension).
+     */
+    createCollection(collectionName) {
         const filenames = fs.readdirSync(dataFolderPath);
 
         // Vérification que le fichier n'existe pas déjà
-        if (filenames.includes(`${name}.gift`)) {
-            console.log(`L'examen ${name}.gift existe déjà. Vous pouvez le retrouver ici :\n` +
-                `${process.cwd()}/${dataFolderPath}${name}.gift`);
+        if (filenames.includes(`${collectionName}.gift`)) {
+            console.log(`L'examen ${collectionName}.gift existe déjà. Vous pouvez le retrouver ici :\n` +
+                `${process.cwd()}/${dataFolderPath}${collectionName}.gift`);
             return;
         }
 
         // Création du fichier si nécessaire
-        const collectionPath = `${dataFolderPath}/${name}.gift`;
+        const collectionPath = `${dataFolderPath}/${collectionName}.gift`;
         fs.writeFile(collectionPath, "", "utf8", (err) => {
             if (err) {
                 console.error(err);
             } else {
-                console.log(`L'examen ${name}.gift a bien été créé. Vous pouvez le trouver ici :\n` +
-                    `${process.cwd()}/${dataFolderPath}${name}.gift`);
+                console.log(`L'examen ${collectionName}.gift a bien été créé. Vous pouvez le trouver ici :\n` +
+                    `${process.cwd()}/${dataFolderPath}${collectionName}.gift`);
             }
         });
 
-        this.ajouterQuestions(collectionPath, tempStoragePath);
+        this.ajouterQuestions(collectionPath);
     }
-    
 }
 
 module.exports = CollectionQuestions;
