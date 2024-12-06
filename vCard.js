@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-
-
 class VCard {
     /**
      * Crée une nouvelle instance de VCard.
@@ -62,17 +60,37 @@ END:VCARD`;
 }
 
 class GestionVCard {
-    constructor(fichierStockage = 'emails_utilises.json') {
-        this.fichierStockage = path.resolve(fichierStockage);
+    constructor() {
+        // Chemins spécifiques
+        this.dossierData = path.resolve('data');
+        this.dossierVCard = path.join(this.dossierData, 'vCard');
+        this.fichierEmails = path.join(this.dossierData, 'emails_utilises.json');
+
+        // Assurer que les dossiers existent
+        this.creerDossiersSiNecessaire();
+
+        // Charger le stockage des e-mails
         this.chargerStockage();
+    }
+
+    /**
+     * Crée les dossiers nécessaires si absents.
+     */
+    creerDossiersSiNecessaire() {
+        if (!fs.existsSync(this.dossierData)) {
+            fs.mkdirSync(this.dossierData, { recursive: true });
+        }
+        if (!fs.existsSync(this.dossierVCard)) {
+            fs.mkdirSync(this.dossierVCard, { recursive: true });
+        }
     }
 
     /**
      * Charge le fichier de stockage des adresses e-mail.
      */
     chargerStockage() {
-        if (fs.existsSync(this.fichierStockage)) {
-            const contenu = fs.readFileSync(this.fichierStockage, 'utf-8');
+        if (fs.existsSync(this.fichierEmails)) {
+            const contenu = fs.readFileSync(this.fichierEmails, 'utf-8');
             this.emailsUtilises = JSON.parse(contenu);
         } else {
             this.emailsUtilises = [];
@@ -83,7 +101,7 @@ class GestionVCard {
      * Sauvegarde les adresses e-mail utilisées dans le fichier de stockage.
      */
     sauvegarderStockage() {
-        fs.writeFileSync(this.fichierStockage, JSON.stringify(this.emailsUtilises, null, 2));
+        fs.writeFileSync(this.fichierEmails, JSON.stringify(this.emailsUtilises, null, 2));
     }
 
     /**
@@ -110,16 +128,17 @@ class GestionVCard {
     /**
      * Génère et sauvegarde une VCard après vérification des informations.
      * @param {VCard} vcard - L'instance de VCard à enregistrer.
-     * @param {string} chemin - Le chemin du fichier VCard.
+     * @param {string} nomFichier - Nom du fichier vCard (sans extension).
      */
-    genererEtSauvegarder(vcard, chemin) {
+    genererEtSauvegarder(vcard, nomFichier) {
         if (this.verifierEmail(vcard.email)) {
             throw new Error(`L'adresse e-mail ${vcard.email} est déjà utilisée.`);
         }
 
-        vcard.enregistrerVCard(chemin);
+        const cheminFichier = path.join(this.dossierVCard, `${nomFichier}.vcf`);
+        vcard.enregistrerVCard(cheminFichier);
         this.ajouterEmail(vcard.email);
-        console.log(`VCard générée et sauvegardée : ${chemin}`);
+        console.log(`VCard générée et sauvegardée : ${cheminFichier}`);
     }
 }
 

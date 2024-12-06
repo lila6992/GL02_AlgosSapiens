@@ -1,0 +1,7 @@
+BEGIN:VCARD
+VERSION:4.0
+FN:John Doe
+EMAIL:john.doe@example.com
+TEL:123456789
+ORG:High School
+END:VCARD

@@ -2,12 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
+const { VCard, GestionVCard } = require('./vCard');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 
 const CollectionQuestions = require('./CollectionQuestions');
 const {Question, CollectionQuestion } = require('./Question');
+const gestionVCard = new GestionVCard();
 
 cli
     .version('1.0.0')
@@ -219,6 +221,40 @@ cli
 	.action(({ args }) => {
         const collectionQuestions = new CollectionQuestions();
         collectionQuestions.createCollection(args.collection);
-	});
+	})
+
+    .command('vcard', 'Générer un fichier vCard pour un enseignant')
+    .argument('<nom>', 'Nom de l\'enseignant')
+    .argument('<prenom>', 'Prénom de l\'enseignant')
+    .argument('<email>', 'Adresse e-mail de l\'enseignant')
+    .argument('<telephone>', 'Numéro de téléphone de l\'enseignant')
+    .option('--organisation <organisation>', 'Nom de l\'organisation', {
+        default: 'SRYEM',
+    })
+    .option('--fichier <fichier>', 'Nom du fichier vCard généré (sans extension)', {
+        default: 'enseignant',
+    })
+    .action(({ args, options, logger }) => {
+        try {
+            // Créer une instance de VCard
+            const vcard = new VCard(
+                args.nom,
+                args.prenom,
+                args.email,
+                args.telephone,
+                options.organisation
+            );
+
+            // Définir le chemin du fichier
+            const cheminFichier = `${options.fichier}.vcf`;
+
+            // Générer et sauvegarder la vCard
+            gestionVCard.genererEtSauvegarder(vcard, cheminFichier);
+
+            logger.info(`Fichier vCard généré avec succès : ${cheminFichier}`);
+        } catch (error) {
+            logger.error(`Erreur : ${error.message}`);
+        }
+    });
 
 cli.run(process.argv.slice(2));
