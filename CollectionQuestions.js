@@ -66,7 +66,7 @@ class CollectionQuestions {
     logQuestions = function (questions) {
         const transformType = (typeDeQuestion) => {
             switch (typeDeQuestion) {
-                case 'qcml':
+                case 'qcm1':
                     return 'Choix multiples';
                 case 'vrai_faux':
                     return 'Vrai ou faux';

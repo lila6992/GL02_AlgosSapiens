@@ -113,7 +113,7 @@ class GiftParser {
                     reponses[reponses.length - 1].push(input[0]);
                     this.next(input);
                 } else if (this.check('~', input) && input[1] !== '=' && input[1] !== '%') {
-                    typeDeQuestion = 'qcml';
+                    typeDeQuestion = 'qcm1';
                     // Collect incorrect answers in reponses
                     const incorrectReponse = this.reponses(input);
                     reponses[reponses.length - 1].push(incorrectReponse);
