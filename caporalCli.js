@@ -197,6 +197,20 @@ cli
 	.action(({ args }) => {
         const collectionQuestions = new CollectionQuestions();
         collectionQuestions.createCollection(args.collection);
+	})
+
+    // stats
+	.command('stats', "Générer les statistiques d'un examen à partir du fichier GIFT ")
+	.argument('<collection>', 'le nom de l\'examen')
+	.action(({ args }) => {
+        try{
+            const collectionQuestions = new CollectionQuestions();
+            const stats = collectionQuestions.genererStats(args.collection);
+            console.log(stats);
+        }  catch (error) {
+            logger.error(`Erreur lors de la recherche : ${error.message}`);
+        }
+        
 	});
 
 cli.run(process.argv.slice(2));

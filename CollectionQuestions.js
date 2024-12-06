@@ -4,6 +4,7 @@ const chalk = require('chalk');
 const path = require('path');
 const GiftParser = require('./GiftParser');
 const { CollectionQuestion, Question } = require('./Question');
+const { match } = require('assert');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
@@ -330,6 +331,68 @@ class CollectionQuestions {
         }
     }
 
+    /**
+     * Compte le nombre de questions de chaque type dans un fichier de collection.
+     * @param {string} collectionName - Nom de la collection (sans extension).
+     * @returns {Object} - Nombre de questions par type
+     */
+    genererStats(collectionName) {
+        const collectionPath = path.join(dataFolderPath, `${collectionName}.gift`);
+        try {
+            const data = fs.readFileSync(collectionPath, 'utf8'); // Synchronous file read
+            const questions = this.chargeExamQuestions(data, collectionPath, false);
+            let stats = {
+                vrai_faux : 0,
+                ouverte : 0,
+                texte : 0,
+                match : 0,
+                numerique : 0,
+                mot_manquant : 0,
+                qcml : 0,
+                qcm2 : 0,
+                inconnu : 0
+            };
+            for (let index in questions){
+                console.log(index)
+                console.log(questions[index].typeDeQuestion)
+                switch (questions[index].typeDeQuestion){
+                    case 'vrai_faux' :
+                        stats.vrai_faux ++
+                        break
+                    case 'ouverte' :
+                        stats.ouverte ++
+                        break
+                    case 'texte' :
+                        stats.texte ++
+                        break
+                    case 'match' :
+                        stats.match ++
+                        break
+                    case "numerique" :
+                        stats.numerique ++
+                        break
+                    case "mot_manquant" :
+                        stats.mot_manquant ++
+                        break
+                    case "qcml" :
+                        stats.qcml ++
+                        break
+                    case "qcm2" :
+                        stats.qcm2 ++
+                        break
+                    default :
+                        stats.inconnu ++
+                        break
+                }
+            }
+            return stats;
+
+        } catch (err) {
+            console.error('Erreur de lecture du fichier :', err);
+            return 0; 
+        }
+        
+    }
 }
 
 module.exports = CollectionQuestions;
