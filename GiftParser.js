@@ -88,22 +88,17 @@ class GiftParser {
         }
     }
 
-    /**
-     * Traite les tokens d'une question et extrait les informations.
-     * @param {Array} input - Liste des tokens à traiter.
-     * @param {string} fileName - Nom du fichier.
-     * @param {string} rawGift - Le texte brut de la question.
-     */
     question(input, fileName, rawGift) {
         let inAnswer = false;
         let titre = '';
         let texte = [];
-        let bonnesReponses = [[]];
-        let reponses = [[]];
+        let bonnesReponses = [[]]; // Tableau pour plusieurs groupes de bonnes réponses
+        let reponses = [[]]; // Tableau pour plusieurs groupes de réponses
         let typeDeQuestion;
         let previous;
         let i = 1;
-        
+        let qcmMultiple = false; // Flag pour indiquer si la question a plusieurs endroits de réponses
+    
         while (input.length > 0) {
             try {
                 if (this.check('::', input)) {
@@ -112,7 +107,7 @@ class GiftParser {
                 } else if (this.check('%', input)) {
                     input[0] = previous;
                 } else if (this.check('=', input) && inAnswer) {
-                    // Collect correct answers in both bonnesReponses and reponses
+                    // Collecte des bonnes réponses pour le groupe actuel
                     const correctReponse = this.bonnesReponses(input);
                     bonnesReponses[bonnesReponses.length - 1].push(correctReponse);
                     reponses[reponses.length - 1].push(correctReponse);
@@ -121,8 +116,8 @@ class GiftParser {
                     inAnswer = true;
                     typeDeQuestion = 'ouverte';
                     if (input[1] === '=' || input[1] === '~' || input[1] === '}') {
-                        bonnesReponses.push([]);
-                        reponses.push([]);
+                        bonnesReponses.push([]); // Nouveau groupe de bonnes réponses
+                        reponses.push([]); // Nouveau groupe de réponses proposées
                         texte.push('(' + i + ')');
                         i++;
                     }
@@ -133,19 +128,18 @@ class GiftParser {
                     reponses[reponses.length - 1].push(input[0]);
                     this.next(input);
                 } else if (this.check('~', input) && input[1] !== '=' && input[1] !== '%') {
-                    typeDeQuestion = 'qcm1';
-                    // Collect incorrect answers in reponses
+                    if (!qcmMultiple) {
+                        typeDeQuestion = 'qcm1'; // Une seule fois, on marque la question comme qcm1
+                        qcmMultiple = true; // Indique que cette question a plusieurs endroits de réponses
+                    }
                     const incorrectReponse = this.reponses(input);
                     reponses[reponses.length - 1].push(incorrectReponse);
                 } else if (this.check('}', input) && input.length > 1 && input[1] !== '::') {
                     inAnswer = false;
                     this.expect('}', input);
-    
-                    if (input[0] !== '//') 
-                        texte.push(this.texte(input));
+                    if (input[0] !== '//') texte.push(this.texte(input));
                 } else {
                     texte.push(this.texte(input));
-
                     if (texte.some(t => t.includes("___"))) {
                         typeDeQuestion = 'mot_manquant';
                     }
@@ -156,15 +150,14 @@ class GiftParser {
             }
         }
     
-        // Determine type based on the current responses
+        // Si aucun type de question n'a été défini, on le définit par défaut
         if (typeDeQuestion === 'ouverte' && reponses[reponses.length - 1].length === 0 && bonnesReponses[bonnesReponses.length - 1].length > 0)
             typeDeQuestion = 'numerique';
         else if (typeDeQuestion === undefined)
             typeDeQuestion = 'texte';
     
-        // Increment global question index
         this.questionIndex++;
-        
+    
         const questionObj = {
             id: this.titreId(titre),
             file: fileName,
@@ -172,9 +165,9 @@ class GiftParser {
             titre,
             typeDeQuestion,
             texte: texte.join(' '),
-            bonnesReponses: bonnesReponses.flat(),
-            reponses: reponses.flat(),
-            formatGift: rawGift 
+            bonnesReponses: bonnesReponses.flat(), // Aplatir pour obtenir un tableau simple
+            reponses: reponses.flat(), // Aplatir également les réponses
+            formatGift: rawGift
         };
     
         this.parsedQuestion.push(questionObj);
@@ -185,6 +178,7 @@ class GiftParser {
     
         return true;
     }
+         
  
     /**
      * Génère un ID unique pour un titre en le transformant en une chaîne URL-friendly.

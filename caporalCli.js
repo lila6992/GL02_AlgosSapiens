@@ -34,16 +34,38 @@ cli
     })
 
     // list
+    // list
     .command('list', 'Afficher toutes les questions')
-    .action(({ logger }) => {
+    .option('-t, --type <type>', 'Filtrer les questions par type', { validator: cli.STRING, default: '' }) // Ajout de l'option pour filtrer par type
+    .action(({ logger, options }) => {
         try {
             const collectionQuestions = new CollectionQuestions();
-            const allQuestions = collectionQuestions.chargeAllFolderQuestions(false);
-            collectionQuestions.logQuestions(allQuestions); 
+            const allQuestions = collectionQuestions.chargeAllFolderQuestions(false); // Charger toutes les questions
+    
+            // Log des types de questions
+            logger.info("Types de questions présentes :");
+            allQuestions.forEach(q => {
+                logger.info(q.typeDeQuestion); // Affiche les types de questions
+            });
+    
+            let filteredQuestions = allQuestions;
+    
+            // Si un type est spécifié, filtrer les questions par type
+            if (options.type) {
+                filteredQuestions = allQuestions.filter(q => q.typeDeQuestion === options.type);
+            }
+    
+            // Afficher les questions filtrées
+            if (filteredQuestions.length > 0) {
+                collectionQuestions.logQuestions(filteredQuestions); 
+            } else {
+                logger.info(`Aucune question trouvée pour le type "${options.type}".`);
+            }
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
     })
+    
 
     //view
     .command('view', 'Afficher les questions dans la collection personnelle')

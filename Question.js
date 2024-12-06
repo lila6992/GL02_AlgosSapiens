@@ -7,10 +7,12 @@ class Question {
         if (!titre || !texte || !Array.isArray(reponses) || reponses.length < 1 || !Array.isArray(bonnesReponses)) {
             throw new Error("Données invalides pour créer une question.");
         }
+
+        // Modifier les réponses et les bonnes réponses pour accepter des ensembles de réponses multiples
         this.titre = titre;
         this.texte = texte;
-        this.reponses = reponses;
-        this.bonnesReponses = bonnesReponses;
+        this.reponses = reponses; // Liste de groupes de réponses pour gérer plusieurs endroits
+        this.bonnesReponses = bonnesReponses; // Liste de groupes de bonnes réponses
         this.typeDeQuestion = typeDeQuestion;
     }
 
@@ -24,6 +26,8 @@ class Question {
         );
     }
 }
+
+module.exports = Question;
 
 class CollectionQuestion {
     constructor() {
