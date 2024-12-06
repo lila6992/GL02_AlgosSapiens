@@ -9,6 +9,12 @@ class GiftParser {
         this.errorMessages = [];
     }
 
+    /**
+     * Parse les données et retourne une liste de questions parsées.
+     * @param {string} data - Données à parser sous forme de chaîne de caractères.
+     * @param {string} fileName - Nom du fichier.
+     * @returns {Array} Liste des questions parsées.
+     */
     parse(data, fileName) {
         try {
             if (typeof data !== 'string') {
@@ -46,6 +52,11 @@ class GiftParser {
         }
     }
 
+    /**
+     * Tokenize un bloc de texte en éléments significatifs.
+     * @param {string} block - Bloc de texte à tokenizer.
+     * @returns {Array} Liste des tokens extraits du bloc.
+     */
     tokenizeBlock(block) {
         // Preserve "::" tokens
         const separator = /(::|{|}|=|~|#|MC|SA|\n|\$CATEGORY:|%)/g;
@@ -63,7 +74,12 @@ class GiftParser {
         return tokens;
     }
 
-
+    /**
+     * Ajoute une question à la liste des questions parsées.
+     * @param {Array} input - Liste des tokens à traiter.
+     * @param {string} fileName - Nom du fichier.
+     * @param {string} rawGift - Le texte brut de la question.
+     */
     listQuestion(input, fileName, rawGift) {
         try {
             this.question(input, fileName, rawGift);
@@ -72,6 +88,12 @@ class GiftParser {
         }
     }
 
+    /**
+     * Traite les tokens d'une question et extrait les informations.
+     * @param {Array} input - Liste des tokens à traiter.
+     * @param {string} fileName - Nom du fichier.
+     * @param {string} rawGift - Le texte brut de la question.
+     */
     question(input, fileName, rawGift) {
         let inAnswer = false;
         let titre = '';
@@ -81,9 +103,7 @@ class GiftParser {
         let typeDeQuestion;
         let previous;
         let i = 1;
-    
-        const sanitizedFileName = this.sanitizeFileName(fileName);
-    
+        
         while (input.length > 0) {
             try {
                 if (this.check('::', input)) {
@@ -165,19 +185,12 @@ class GiftParser {
     
         return true;
     }
-
-    
-    sanitizeFileName(fileName) {
-        const normalizedFileName = fileName.replace(/\\/g, '/');
-        // Check if entire path
-        if (normalizedFileName.includes('gift/')) {
-            fileName = normalizedFileName.split('gift/').pop();
-        }
-        // Remove the ".gift" extension if present
-        return fileName.replace('.gift', '');
-    }
-    
-
+ 
+    /**
+     * Génère un ID unique pour un titre en le transformant en une chaîne URL-friendly.
+     * @param {string} titre - Le titre de la question.
+     * @returns {string} L'ID généré pour le titre.
+     */
     titreId(titre) {
         return titre
             .toLowerCase() // Convert to lowercase
@@ -188,6 +201,11 @@ class GiftParser {
             .replace(/-+/g, '-'); // Replace consecutive dashes with a single dash
     }
 
+    /**
+     * Extrait le titre d'une question à partir des tokens fournis.
+     * @param {Array} input - Liste des tokens.
+     * @returns {string} Le titre extrait.
+     */
     titre(input) {
         // Now expecting the first token to be "::"
         if (input[0] !== '::') {
@@ -217,7 +235,11 @@ class GiftParser {
         return `Untitled Question ${this.questionIndex}`;  
     }
     
-
+    /**
+     * Extrait le texte d'une question à partir des tokens fournis.
+     * @param {Array} input - Liste des tokens.
+     * @returns {string} Le texte extrait.
+     */
     texte(input) {
         const curS = this.next(input) || '';
         // Remove all "::", "{", and "}" patterns and capture text
@@ -227,7 +249,11 @@ class GiftParser {
         return '';
      }
   
-
+    /**
+     * Extrait les bonnes réponses d'une question à partir des tokens fournis.
+     * @param {Array} input - Liste des tokens.
+     * @returns {string} La bonne réponse extraite.
+     */
     bonnesReponses(input) {
         this.expect('=', input);
         const curS = this.next(input);
@@ -247,6 +273,11 @@ class GiftParser {
         return '';
     }
     
+    /**
+     * Extrait les choix de réponse d'une question à partir des tokens fournis.
+     * @param {Array} input - Liste des tokens.
+     * @returns {string} Le choix de réponse extrait.
+     */
     reponses(input) {
         this.expect("~", input);
         const curS = this.next(input);
@@ -266,15 +297,29 @@ class GiftParser {
         return '';
     }
     
-
+    /**
+     * Vérifie si un token correspond à un symbole attendu.
+     * @param {string} symbol - Le symbole à vérifier.
+     * @param {Array} input - Liste des tokens.
+     * @returns {boolean} Vrai si le symbole est trouvé.
+     */
     check(s, input) {
         return input[0] === s;
     }
 
+    /**
+     * Passe au token suivant dans la liste.
+     * @param {Array} input - Liste des tokens.
+     */
     next(input) {
         return input.shift();
     }
 
+    /**
+     * Vérifie que le token actuel est celui attendu.
+     * @param {string} symbol - Le symbole attendu.
+     * @param {Array} input - Liste des tokens.
+     */
     expect(s, input) {
         const nextToken = this.next(input);
         if (nextToken !== s) {
@@ -284,11 +329,19 @@ class GiftParser {
         return true;
     }
 
+    /**
+     * Gère les erreurs en augmentant le compteur et en enregistrant les messages d'erreur.
+     * @param {string} message - Le message d'erreur.
+     */
     incrementErrorCount(errorMessage) {
         this.errorMessages.push(errorMessage);
         this.errorCount++;
     }
 
+    /**
+     * Vérifie si le format du fichier est correct, basé sur le comptage des erreurs.
+     * @param {string} fileName - Le nom du fichier à vérifier.
+     */
     checkFormat(fileName) {
         let formatResult;
     
