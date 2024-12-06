@@ -5,6 +5,7 @@ const cli = require('@caporal/core').default;
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
+const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
 
 const CollectionQuestions = require('./CollectionQuestions');
 const {Question, CollectionQuestion } = require('./Question');
@@ -86,7 +87,7 @@ cli
     })
 
     // countain
-    .command('countain', 'Afficher les questions dans la collection personnelle')
+    .command('countain', 'Affiche si la question est comprise dans la collection')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .argument('<id>', 'ID de la question')
     .action(({ logger, args }) => {
@@ -151,6 +152,19 @@ cli
         logger.error(`Erreur lors de la sélection des questions : ${error.message}`);
         }
     })
+
+    // clear
+    .command('clear', 'Vider le contenu du fichier temporaire sans le supprimer')
+    .action(({ logger }) => {
+        try {
+            // Vider le fichier tempStoragePath
+            fs.writeFileSync(tempStoragePath, '', 'utf8');
+            logger.info('Le fichier temporaire a été vidé.');
+        } catch (error) {
+            logger.error(`Erreur lors de la tentative de vider le fichier temporaire : ${error.message}`);
+        }
+    })
+
     
     // add
     .command('add', 'Ajouter une question à une  collection')
