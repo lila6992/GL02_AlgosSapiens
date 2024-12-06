@@ -103,11 +103,11 @@ cli
     
     // add
     .command('add', 'Ajouter une question à une  collection')
-    .argument('<collection>', 'Nom complet avec extension du fichier de collection')
+    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .action(({ logger, args }) => {
         try {  
             const collectionQuestions = new CollectionQuestions();
-            const collectionPath = path.join(__dirname, 'data', 'gift', args.collection); 
+            const collectionPath = path.join(__dirname, 'data', 'gift', `${args.collection}.gift`); 
             collectionQuestions.ajouterQuestions(collectionPath, tempStoragePath);
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
@@ -140,36 +140,12 @@ cli
         }
     })
     
-    // Modify the create command to use the persisted collection
-    .command('create', 'Créer un fichier GIFT à partir de la collection personnelle')
-    .argument('<nomFichier>', 'Nom du fichier GIFT (sans extension)')
-    .action(({ logger, args }) => {
-        try {
-            // Load existing collection
-            let collection = [];
-            if (fs.existsSync(personalCollectionPath)) {
-                const rawData = fs.readFileSync(personalCollectionPath, 'utf-8');
-                collection = JSON.parse(rawData).map(q => 
-                    new Question(q.titre, q.texte, q.reponses, q.bonnesReponses, q.typeDeQuestion)
-                );
-            }
-    
-            const nombreQuestions = collection.length;
-    
-            if (nombreQuestions < 15) {
-                throw new Error(`L'collectionQuestions doit contenir au moins 15 questions. Actuellement : ${nombreQuestions}.`);
-            } else if (nombreQuestions > 20) {
-                throw new Error(`L'collectionQuestions ne peut pas contenir plus de 20 questions. Actuellement : ${nombreQuestions}.`);
-            }
-    
-            const collectionPersonnelle = new CollectionQuestion();
-            collection.forEach(q => collectionPersonnelle.ajouterQuestion(q));
-            
-            collectionPersonnelle.genererFichierGIFT(args.nomFichier);
-            logger.info(`Fichier GIFT "${args.nomFichier}.gift" créé avec succès.`);
-        } catch (error) {
-            logger.error(`Erreur : ${error.message}`);
-        }
-    });
+    // create
+	.command('create', 'Créer un fichier GIFT à partir des questions sélectionnées')
+	.argument('<collection>', 'le nom de l\'examen')
+	.action(({ args }) => {
+        const collectionQuestions = new CollectionQuestions();
+        collectionQuestions.createCollection(dataFolderPath, args.collection);
+	});
 
 cli.run(process.argv.slice(2));

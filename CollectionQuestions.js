@@ -5,6 +5,10 @@ const path = require('path');
 const GiftParser = require('./GiftParser');
 const { CollectionQuestion, Question } = require('./Question');
 
+const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
+const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
+const dataFolderPath = path.join(__dirname, 'data', 'gift');
+
 class CollectionQuestions {
     constructor(nomFichier) {
         this.nomFichier = nomFichier;
@@ -194,6 +198,31 @@ class CollectionQuestions {
                 console.log(`Nouvelles questions ajoutées au fichier GIFT : ${collectionPath}`);
             });
         });
+    }
+
+    
+    createCollection(dataFolderPath, name) {
+        const filenames = fs.readdirSync(dataFolderPath);
+
+        // Vérification que le fichier n'existe pas déjà
+        if (filenames.includes(`${name}.gift`)) {
+            console.log(`L'examen ${name}.gift existe déjà. Vous pouvez le retrouver ici :\n` +
+                `${process.cwd()}/${dataFolderPath}${name}.gift`);
+            return;
+        }
+
+        // Création du fichier si nécessaire
+        const collectionPath = `${dataFolderPath}/${name}.gift`;
+        fs.writeFile(collectionPath, "", "utf8", (err) => {
+            if (err) {
+                console.error(err);
+            } else {
+                console.log(`L'examen ${name}.gift a bien été créé. Vous pouvez le trouver ici :\n` +
+                    `${process.cwd()}/${dataFolderPath}${name}.gift`);
+            }
+        });
+
+        this.ajouterQuestions(collectionPath, tempStoragePath);
     }
     
 }
