@@ -4,6 +4,7 @@ const chalk = require('chalk');
 const path = require('path');
 const GiftParser = require('./GiftParser');
 const { CollectionQuestion, Question } = require('./Question');
+const readline = require('readline');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
@@ -258,7 +259,7 @@ class CollectionQuestions {
                 this.logQuestions(newQuestions);
     
                 // Convert new questions to GIFT format
-                const contenuGIFT = newQuestions.map(q => `::${q.formatGift}`).join('\n\n');
+                const contenuGIFT = newQuestions.map(q => q.formatGift.startsWith('::') ? q.formatGift : `::${q.formatGift}`).join('\n\n');
     
                 // Conditionally add newlines based on whether the file is empty
                 const prefix = existingData.trim() === '' ? '' : '\n\n';
@@ -345,3 +346,4 @@ class CollectionQuestions {
 }
 
 module.exports = CollectionQuestions;
+

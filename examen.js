@@ -4,150 +4,95 @@ const readline = require('readline');
 const GiftParser = require('./GiftParser');
 
 class Examen {
-    async simulate(nomExam) {
-        try {
-            const cheminFichier = path.resolve(`./data/gift/${nomExam}.gift`);
-            if (!fs.existsSync(cheminFichier)) {
-                console.error(`Erreur : Le fichier "${nomExam}.gift" n'existe pas.`);
-                return;
-            }
-
-            const contenuFichier = fs.readFileSync(cheminFichier, 'utf8');
-            const parser = new GiftParser();
-            const questions = parser.parse(contenuFichier, nomExam);
-
-            if (questions.length === 0) {
-                console.error('Aucune question valide trouvée dans le fichier.');
-                return;
-            }
-
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout,
-            });
-
-            const givenAnswers = [];
-            let score = 0;
-            let nbQuestions = 0;
-            let openQuestions = 0;
-
-            const poserQuestion = (index) => {
-                if (index >= questions.length) {
-                    rl.close();
-                    this.afficherBilan(questions, givenAnswers, score, nbQuestions, openQuestions);
-                    return;
-                }
-
-                const question = questions[index];
-                console.log(`\n=== Question ${index + 1} : ${question.titre || 'Sans titre'} ===`);
-                console.log(question.texte);
-
-                switch (question.typeDeQuestion) {
-                    case 'choix_multiple':
-                        question.reponses.forEach((option, i) => {
-                            console.log(`${i + 1}. ${option}`);
-                        });
-                        rl.question('Votre réponse (indices séparés par des virgules) : ', (reponse) => {
-                            const reponsesUtilisateur = reponse
-                                .split(',')
-                                .map((r) => question.reponses[parseInt(r.trim(), 10) - 1]);
-                            givenAnswers.push(reponsesUtilisateur);
-                            score += this.calculerPoints(question, reponsesUtilisateur);
-                            nbQuestions++;
-                            poserQuestion(index + 1);
-                        });
-                        break;
-
-                    case 'vrai_faux':
-                        rl.question('Votre réponse (true/false) : ', (reponse) => {
-                            givenAnswers.push(reponse.toLowerCase());
-                            score += this.calculerPoints(question, [reponse.toLowerCase()]);
-                            nbQuestions++;
-                            poserQuestion(index + 1);
-                        });
-                        break;
-
-                    case 'numerique':
-                        rl.question('Votre réponse (nombre) : ', (reponse) => {
-                            givenAnswers.push(reponse);
-                            score += this.calculerPoints(question, [reponse]);
-                            nbQuestions++;
-                            poserQuestion(index + 1);
-                        });
-                        break;
-
-                    case 'mot_manquant':
-                        rl.question('Complétez la phrase : ', (reponse) => {
-                            givenAnswers.push(reponse);
-                            score += this.calculerPoints(question, [reponse]);
-                            nbQuestions++;
-                            poserQuestion(index + 1);
-                        });
-                        break;
-
-                    case 'match':
-                        console.log('Associez les éléments suivants :');
-                        question.reponses.forEach((pair, i) => {
-                            console.log(`${i + 1}. ${pair}`);
-                        });
-                        const reponsesUtilisateur = [];
-                        question.bonnesReponses.forEach((bonneReponse, i) => {
-                            rl.question(`-> ${bonneReponse} correspond à : `, (reponse) => {
-                                reponsesUtilisateur.push(reponse);
-                                if (i === question.bonnesReponses.length - 1) {
-                                    givenAnswers.push(reponsesUtilisateur);
-                                    score += this.calculerPoints(question, reponsesUtilisateur);
-                                    nbQuestions++;
-                                    poserQuestion(index + 1);
-                                }
-                            });
-                        });
-                        break;
-
-                    default:
-                        console.log('Type de question non supporté ou correction manuelle requise.');
-                        givenAnswers.push(null);
-                        openQuestions++;
-                        poserQuestion(index + 1);
-                        break;
-                }
-            };
-
-            poserQuestion(0);
-        } catch (error) {
-            console.error(`Erreur lors de la simulation : ${error.message}`);
-        }
+    constructor(questions) {
+        this.questions = questions;
     }
-
-    calculerPoints(question, reponsesUtilisateur) {
-        let points = 0;
-        if (['choix_multiple', 'vrai_faux', 'numerique'].includes(question.typeDeQuestion)) {
-            question.bonnesReponses.forEach((bonneReponse) => {
-                if (reponsesUtilisateur.includes(bonneReponse)) {
-                    points += 1;
-                }
-            });
-        } else if (question.typeDeQuestion === 'match') {
-            question.bonnesReponses.forEach((bonneReponse, index) => {
-                if (reponsesUtilisateur[index] === bonneReponse) {
-                    points += 1;
-                }
-            });
-        }
-        return points;
-    }
-
-    afficherBilan(questions, givenAnswers, score, nbQuestions, openQuestions) {
-        console.log('\n=== Bilan de l\'examen ===');
-        questions.forEach((question, index) => {
-            console.log(`\nQuestion ${index + 1} : ${question.titre || 'Sans titre'}`);
-            console.log(`Votre réponse : ${givenAnswers[index]}`);
-            console.log(`Bonne réponse : ${question.bonnesReponses.join(', ')}`);
+    async simuler() {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
         });
-
-        console.log(`\nScore total : ${score} / ${nbQuestions}`);
-        console.log(`${openQuestions} question(s) nécessite(nt) une correction manuelle.`);
+        const givenAnswers = [];
+        let score = 0;
+        let totalQuestions = this.questions.length;
+        for (let index = 0; index < this.questions.length; index++) {
+            const question = this.questions[index];
+            console.log(`\n${chalk.bold(`Question ${index + 1}:`)} ${question.titre}`);
+            console.log(chalk.gray(question.texte));
+            switch (question.typeDeQuestion) {
+                case 'qcm1':
+                    console.log(chalk.cyan('Choisissez la réponse correcte :'));
+                    question.reponses.forEach((reponse, i) => {
+                        console.log(`${i + 1}. ${reponse}`);
+                    });
+                    const reponseQCM = await this.poserQuestionQCM(rl, question);
+                    givenAnswers.push(reponseQCM);
+                    score += this.verifierReponseQCM(question, reponseQCM) ? 1 : 0;
+                    break;
+                case 'mot_manquant':
+                    console.log(chalk.cyan('Choisissez le mot manquant :'));
+                    question.reponses.forEach((reponse, i) => {
+                        console.log(`${i + 1}. ${reponse}`);
+                    });
+                    const reponseMot = await this.poserQuestionMotManquant(rl, question);
+                    givenAnswers.push(reponseMot);
+                    score += this.verifierReponseMotManquant(question, reponseMot) ? 1 : 0;
+                    break;
+                case 'ouverte':
+                    console.log(chalk.cyan('Choisissez le mot manquant :'));
+                    question.reponses.forEach((reponse, i) => {
+                        console.log(`${i + 1}. ${reponse}`);
+                    });
+                    const reponseOuverte = await this.poserQuestionOuverte(rl, question);
+                    givenAnswers.push(reponseOuverte);
+                    score += this.verifierReponseOuverte(question, reponseOuverte) ? 1 : 0;
+                    break;
+            }
+        }
+        rl.close();
+        this.afficherBilan(this.questions, givenAnswers, score, totalQuestions);
+    }
+    poserQuestionQCM(rl, question) {
+        return new Promise((resolve) => {
+            rl.question('Votre réponse (numéro) : ', (reponse) => {
+                const index = parseInt(reponse) - 1;
+                resolve(index >= 0 && index < question.reponses.length ? question.reponses[index] : null);
+            });
+        });
+    }
+    verifierReponseQCM(question, reponse) {
+        return question.bonnesReponses.includes(reponse);
+    }
+    poserQuestionMotManquant(rl, question) {
+        return new Promise((resolve) => {
+            rl.question('Votre réponse (numéro) : ', (reponse) => {
+                const index = parseInt(reponse) - 1;
+                resolve(index >= 0 && index < question.reponses.length ? question.reponses[index] : null);
+            });
+        });
+    }
+    verifierReponseMotManquant(question, reponse) {
+        return question.bonnesReponses.includes(reponse);
+    }
+    poserQuestionMotManquant(rl, question) {
+        return new Promise((resolve) => {
+            rl.question('Votre réponse (numéro) : ', (reponse) => {
+                const index = parseInt(reponse) - 1;
+                resolve(index >= 0 && index < question.reponses.length ? question.reponses[index] : null);
+            });
+        });
+    }
+    verifierReponseOuverte(question, reponse) {
+        return question.bonnesReponses.includes(reponse);
+    }
+    afficherBilan(questions, givenAnswers, score, totalQuestions) {
+        console.log(`\n${chalk.bold('=== Bilan de l\'examen ===')}`)
+        console.log(`${chalk.green('Score :')} ${score} / ${totalQuestions}`);
+        questions.forEach((question, index) => {
+            console.log(`\n${chalk.bold(`Question ${index + 1} :`)} ${question.titre}`);
+            console.log(`${chalk.gray('Votre réponse :')} ${givenAnswers[index] || 'Pas de réponse'}`);
+            console.log(`${chalk.cyan('Bonnes réponses :')} ${question.bonnesReponses.join(', ')}`);
+        });
     }
 }
-
 module.exports = Examen;
