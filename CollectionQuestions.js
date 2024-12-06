@@ -353,8 +353,6 @@ class CollectionQuestions {
                 inconnu : 0
             };
             for (let index in questions){
-                console.log(index)
-                console.log(questions[index].typeDeQuestion)
                 switch (questions[index].typeDeQuestion){
                     case 'vrai_faux' :
                         stats.vrai_faux ++

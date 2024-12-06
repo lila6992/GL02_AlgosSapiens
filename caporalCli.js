@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
+const vegaLite = require('vega-lite');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
@@ -202,11 +203,29 @@ cli
     // stats
 	.command('stats', "Générer les statistiques d'un examen à partir du fichier GIFT ")
 	.argument('<collection>', 'le nom de l\'examen')
-	.action(({ args }) => {
+	.action(({logger, args }) => {
         try{
             const collectionQuestions = new CollectionQuestions();
             const stats = collectionQuestions.genererStats(args.collection);
-            console.log(stats);
+            const type = Object.keys(stats);
+            const nb = Object.values(stats);
+            console.log(type)
+            console.log(nb)
+
+
+            let vlSpec = {
+                $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+                data: {
+                  values: type, nb
+                },
+                mark: 'bar',
+                encoding: {
+                  x: {field: type, type: 'ordinal'},
+                  y: {field: nb, type: 'quantitative'}
+                }
+              };
+              //var vgSpec = vegaLite.compile(vlSpec, logger).spec;
+              console.log(vlSpec)
         }  catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
