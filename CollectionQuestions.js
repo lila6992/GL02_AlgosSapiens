@@ -51,8 +51,10 @@ class CollectionQuestions {
                     return 'Choix multiples';
                 case 'vrai_faux':
                     return 'Vrai ou faux';
-                case 'numérique':
+                case 'numerique':
                     return 'Numérique';
+                case 'mot_manquant':
+                    return 'Mot manquant';
                 default:
                     return typeDeQuestion.charAt(0).toUpperCase() + typeDeQuestion.slice(1);
             }
@@ -62,6 +64,7 @@ class CollectionQuestions {
             console.log(`\n`);
             console.log(chalk.bold(`ID : `) + chalk.gray(String(question.id)));
             console.log(chalk.bold(`Titre : `) + chalk.gray(String(question.titre)));
+            console.log(chalk.bold(`formatGift : `) + chalk.gray(transformType(question.formatGift) || 'No format gift available'));
             console.log(chalk.bold(`typeDeQuestion : `) + chalk.gray(transformType(question.typeDeQuestion)));
             console.log(chalk.bold(`Enoncé : `) + chalk.gray(question.texte));
         
@@ -154,93 +157,45 @@ class CollectionQuestions {
             }
         });
     };
-    
-    ajouterQuestions = function (collectionPath, tempStoragePath) {
-        const collectionQuestions = this.chargeExamQuestions('string', collectionPath, false);
-    
-        // Read the temporary storage to ensure no duplicate IDs are added
-        fs.readFile(tempStoragePath, 'utf8', (err, data) => {
-            if (err && err.code !== 'ENOENT') {
+
+    ajouterQuestions(collectionPath, tempStoragePath) {
+        fs.readFile(collectionPath, 'utf8', (err, data) => {
+            if (err) {
                 console.error('Erreur de lecture du fichier :', err);
                 return;
             }
+            const collectionQuestions = this.chargeExamQuestions(data, collectionPath, false);
     
-            let selectedQuestions = [];
-            if (data) {
-                try {
-                    selectedQuestions = JSON.parse(data); // Parse selected questions if the file exists
-                } catch (e) {
-                    console.error('Erreur de parsing JSON :', e);
+            // Read the temporary storage to ensure no duplicate IDs are added
+            fs.readFile(tempStoragePath, 'utf8', (err, data) => {
+                if (err && err.code !== 'ENOENT') {
+                    console.error('Erreur de lecture du fichier :', err);
                     return;
                 }
-            }
     
-            // Filter new selected questions to avoid duplicates
-            const existingIds = new Set(selectedQuestions.map(q => q.id));
-            const newSelectedQuestions = collectionQuestions.filter(q => !existingIds.has(q.id));
-            if (newSelectedQuestions.length === 0) {
-                console.log("Toutes les questions sélectionnées sont déjà dans la collection.");
-                return;
-            }
-    
-            // Convert questions to GIFT format and write them
-            const giftContent = newSelectedQuestions.map(question => this.convertToGiftFormat(question)).join('\n\n');
-            fs.appendFile(collectionPath, giftContent, 'utf8', (writeErr) => {
-                if (writeErr) {
-                    console.error('Erreur lors de l\'écriture dans le fichier :', writeErr);
-                    return;
+                let selectedQuestions = [];
+                if (data) {
+                    try {
+                        selectedQuestions = JSON.parse(data); // Parse selected questions if the file exists
+                    } catch (e) {
+                        console.error('Erreur de parsing JSON :', e);
+                        return;
+                    }
                 }
-                console.log(`Les nouvelles questions ont été ajoutées dans : ${collectionPath}`);
+                this.logQuestions(selectedQuestions);
+    
+                // Convert questions to GIFT format and write them
+                const contenuGIFT = selectedQuestions.map(q => {
+                    return `::${q.formatGift}`;  // Add "::" before the formatGift for each question
+                }).join('\n\n');  // Join each question with two new lines for separation
+    
+                // Append the new questions to the end of the existing collection file
+                fs.appendFileSync(collectionPath, '\n\n' + contenuGIFT, 'utf-8');  // Ensure two new lines before appending
+                console.log(`Nouvelles questions ajoutées au fichier GIFT : ${collectionPath}`);
             });
         });
-    };
-
-    convertToGiftFormat = function (question) {
-        // Convert the question object into GIFT format
-        let giftFormat = `::${question.titre}::${question.texte}\n`;
-        if (question.typeDeQuestion === 'ouverte') {
-            giftFormat += `[markdown] ${question.bonnesReponses.join(' ')}`;
-        } else if (question.reponses && question.reponses.length > 0) {
-            giftFormat += '{\n';
-            giftFormat += question.reponses
-                .map((reponses, index) =>
-                    question.bonnesReponsessWeight[index] === 1 ? `=${reponses}` : `~${reponses}`
-                )
-                .join('\n');
-            giftFormat += '\n}';
-        }
-        return giftFormat;
     }
     
-
-
-    /**
-     * Vérifie la validité de l'examen selon les critères définis.
-     * @returns {Object} - Résultat de la vérification (booléen et détails).
-     */
-    verifierQualite() {
-        const erreurs = [];
-
-        // Vérifie le nombre de questions
-        const nombreQuestions = this.questions.questions.length;
-        if (nombreQuestions < 15) {
-            erreurs.push(`L'examen contient trop peu de questions (${nombreQuestions}). Minimum requis : 15.`);
-        } else if (nombreQuestions > 20) {
-            erreurs.push(`L'examen contient trop de questions (${nombreQuestions}). Maximum permis : 20.`);
-        }
-
-        // Vérifie les doublons
-        const titres = this.questions.questions.map(q => q.titre);
-        const doublons = titres.filter((titre, index) => titres.indexOf(titre) !== index);
-        if (doublons.length > 0) {
-            erreurs.push(`L'examen contient des doublons : ${[...new Set(doublons)].join(', ')}.`);
-        }
-
-        return {
-            valide: erreurs.length === 0,
-            erreurs,
-        };
-    }
 }
 
 module.exports = CollectionQuestions;

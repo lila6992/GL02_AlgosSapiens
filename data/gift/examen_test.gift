@@ -76,5 +76,8 @@
 ::U3 p33 Gra as/like 6.3:: I've always regarded you (1) ~ a friend. {
 ~like
 =as
-}::::string
-::::string
+}
+
+::U9 p95 4.6 Third conditional::[html]
+<b>A:</b> I was doing something else so I didn't hear what she said. (<i>pay attention</i>) <br>
+<b>B:</b> If ____ what she said.{}

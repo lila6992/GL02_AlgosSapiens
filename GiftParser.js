@@ -18,26 +18,32 @@ class GiftParser {
             if (typeof data !== 'string') {
                 throw new Error(`Invalid input: The provided text for file ${fileName} is not a string.`);
             }
-
-            // More flexible tokenization
-            const separator = /(::|{|}|=|~|#|MC|SA|\/\/|\n?\n|\$CATEGORY:|%)/g;
             
-            let tokens = data.split(separator);
-            
-            // More robust cleaning
-            tokens = tokens.map(token => 
-                token.replace(/(<([^>]+)>)/gi, "")
-                     .replace(/\[(\w+)\]/g, '')  // Remove [html], [markdown], etc.
-                     .replace(/\r?\n|\r/g, ' ')  // Replace newlines with spaces
-                     .replace(/\s+/g, ' ')  // Collapse multiple whitespaces
-                     .trim()
-            ).filter(token => token !== '');
+            // Store the raw gift format before parsing
+            const rawGift = data;
 
+            // Remove comment lines that start with "//"
+            const cleanedData = data
+                .split('\n')
+                .filter(line => !line.trim().startsWith('//'))
+                .join('\n')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();       
+
+            // Split the data into individual questions, more robustly
+            const questionSplitRegex = /\n\s*\n::|\n\r\n::|\r\n\r\n::/;
+            const questionBlocks = cleanedData.split(questionSplitRegex).filter(block => block.trim() !== '');
+            
             this.parsedQuestion = [];
             this.errorMessages = [];
             this.errorCount = 0;
+            this.questionIndex = 0;
 
-            this.listQuestion(tokens, fileName);
+            // Process each question block
+            for (const block of questionBlocks) {
+                const tokens = this.tokenizeBlock(block);
+                this.listQuestion(tokens, fileName, block);
+            }
             
             return this.parsedQuestion;
         } catch (error) {
@@ -47,15 +53,34 @@ class GiftParser {
         }
     }
 
-    listQuestion(input, fileName) {
+    tokenizeBlock(block) {
+        // Remove comments first
+        const cleanedBlock = block.replace(/\/\/.*/g, '').trim();
+        const separator = /(::|{|}|=|~|#|MC|SA|\n|\$CATEGORY:|%)/g;
+
+        let tokens = cleanedBlock.split(separator).filter(token => token.trim() !== "");
+
+        tokens = tokens.map(token =>
+            token.replace(/(<([^>]+)>)/gi, "")  // Remove HTML tags
+                .replace(/\[(\w+)\]/g, '')    // Remove markdown-like tags
+                .replace(/\r?\n|\r/g, ' ')    // Replace newlines with spaces
+                .replace(/\s+/g, ' ')         // Collapse spaces
+                .trim()
+        ).filter(token => token !== '');
+
+        return tokens;
+    }
+
+
+    listQuestion(input, fileName, rawGift) {
         try {
-            this.question(input, fileName);
+            this.question(input, fileName, rawGift);
         } catch (error) {
             this.incrementErrorCount(`Error in list question parsing for ${fileName}: ${error.message}`);
         }
     }
 
-    question(input, fileName) {
+    question(input, fileName, rawGift) {
         let inAnswer = false;
         let titre = '';
         let texte = [];
@@ -79,6 +104,7 @@ class GiftParser {
                     const correctReponse = this.bonnesReponses(input);
                     bonnesReponses[bonnesReponses.length - 1].push(correctReponse);
                     reponses[reponses.length - 1].push(correctReponse);
+                    if (correctReponse.includes('->')) typeDeQuestion = 'match';
                 } else if (this.check('{', input)) {
                     inAnswer = true;
                     typeDeQuestion = 'ouverte';
@@ -89,16 +115,28 @@ class GiftParser {
                         i++;
                     }
                     this.next(input);
-                } else if (this.check('~', input) && !['=', '%'].includes(input[1])) {
+                } else if (this.check('TRUE', input) || this.check('T', input) || this.check('FALSE', input) || this.check('F', input)) {
+                    typeDeQuestion = 'vrai_faux';
+                    bonnesReponses[bonnesReponses.length - 1].push(input[0]);
+                    reponses[reponses.length - 1].push(input[0]);
+                    this.next(input);
+                } else if (this.check('~', input) && input[1] !== '=' && input[1] !== '%') {
                     typeDeQuestion = 'qcml';
                     // Collect incorrect answers in reponses
                     const incorrectReponse = this.reponses(input);
                     reponses[reponses.length - 1].push(incorrectReponse);
-                } else if (this.check('}', input)) {
+                } else if (this.check('}', input) && input.length > 1 && input[1] !== '::') {
                     inAnswer = false;
                     this.expect('}', input);
+    
+                    if (input[0] !== '//') 
+                        texte.push(this.texte(input));
                 } else {
                     texte.push(this.texte(input));
+
+                    if (texte.some(t => t.includes("___"))) {
+                        typeDeQuestion = 'mot_manquant';
+                    }
                 }
             } catch (error) {
                 this.incrementErrorCount(`Error parsing question in ${fileName}: ${error.message}`);
@@ -106,9 +144,11 @@ class GiftParser {
             }
         }
     
+        // Determine type based on the current responses
         if (typeDeQuestion === 'ouverte' && reponses[reponses.length - 1].length === 0 && bonnesReponses[bonnesReponses.length - 1].length > 0)
             typeDeQuestion = 'numerique';
-        else if (!typeDeQuestion) typeDeQuestion = 'texte';
+        else if (typeDeQuestion === undefined)
+            typeDeQuestion = 'texte';
     
         // Increment global question index
         this.questionIndex++;
@@ -124,6 +164,7 @@ class GiftParser {
             texte: texte.join(' '),
             bonnesReponses: bonnesReponses.flat(),
             reponses: reponses.flat(),
+            formatGift: rawGift 
         };
     
         this.parsedQuestion.push(questionObj);
@@ -134,30 +175,31 @@ class GiftParser {
     
         return true;
     }
+    
 
     titre(input) {
         this.expect("::", input);
-        const curS = this.next(input);
-        const matched = curS.match(/^(\w|\.|\/|\+|-|"|'|&|\(|\)|\[|\]|:|,|\u2013|\u2014| )+$/i);
-        if (matched) return matched[0];
+        const curS = this.next(input) || '';
+        const matched = curS.match(/^[\s\w.,;:'"“”‘’\-!?()\[\]\/&%€$@+=<>…•{}#:~|]*$/u);
+        if (matched) return matched[0].trim();  
         this.incrementErrorCount(`Invalid titre: ${curS}`);
-        return '';
+        return `Untitled Question ${this.questionIndex}`;  
     }
+    
 
     texte(input) {
-        const curS = this.next(input);
+        const curS = this.next(input) || '';
         const matched = curS.match(/^[\s\w.,;:'"“”‘’\-!?()\[\]\/&%€$@+=<>…•{}#:~|]*$/u);
-        if (matched) return matched[0];
-    
+        if (matched) return matched[0].trim();
         this.incrementErrorCount(`Invalid texte: ${curS}`);
         return '';
     }
-    
+  
 
     bonnesReponses(input) {
         this.expect('=', input);
         const curS = this.next(input);
-        const matched = curS.match(/^(\w|\.|-|,|\u2014|\u2013|\u00a0|\\|\/|\||\*|:|'|\?|->|'|´|'|'|\$|\(|\)| )+$/i);
+        const matched = curS.match(/^[\s\w.,;:'"“”‘’\-!?()\[\]\/&%€$@+=<>…•{}#:~|]*$/u);
         
         if (matched) {
             const answer = matched[0].trim();  // Remove any leading or trailing spaces
@@ -176,7 +218,7 @@ class GiftParser {
     reponses(input) {
         this.expect("~", input);
         const curS = this.next(input);
-        const matched = curS.match(/^(\w|\.|-|,|\u2014|\u2013|\u00a0|\\|\/|:|'|\?|'|´|'|'|\(|\)| )+$/i);
+        const matched = curS.match(/^[\s\w.,;:'"“”‘’\-!?()\[\]\/&%€$@+=<>…•{}#:~|]*$/u);
         
         if (matched) {
             const response = matched[0].trim();  // Remove any leading or trailing spaces
