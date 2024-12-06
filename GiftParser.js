@@ -9,16 +9,6 @@ class GiftParser {
         this.errorMessages = [];
     }
 
-    sanitizeFileName(fileName) {
-        const normalizedFileName = fileName.replace(/\\/g, '/');
-        // Check if entire path
-        if (normalizedFileName.includes('gift/')) {
-            fileName = normalizedFileName.split('gift/').pop();
-        }
-        // Remove the ".gift" extension if present
-        return fileName.replace('.gift', '');
-    }
-
     parse(data, fileName) {
         try {
             if (typeof data !== 'string') {
@@ -154,11 +144,9 @@ class GiftParser {
     
         // Increment global question index
         this.questionIndex++;
-    
-        const uniqueKey = `${sanitizedFileName}-${this.questionIndex}`;
-    
+        
         const questionObj = {
-            id: uniqueKey,
+            id: this.titreId(titre),
             file: fileName,
             questionIndex: this.questionIndex,
             titre,
@@ -177,7 +165,28 @@ class GiftParser {
     
         return true;
     }
+
     
+    sanitizeFileName(fileName) {
+        const normalizedFileName = fileName.replace(/\\/g, '/');
+        // Check if entire path
+        if (normalizedFileName.includes('gift/')) {
+            fileName = normalizedFileName.split('gift/').pop();
+        }
+        // Remove the ".gift" extension if present
+        return fileName.replace('.gift', '');
+    }
+    
+
+    titreId(titre) {
+        return titre
+            .toLowerCase() // Convert to lowercase
+            .replace(/[^a-zA-Z0-9\-]/g, '-') // Replace non-alphanumeric characters (except "-") with "-"
+            .replace(/\s+/g, '-') // Replace spaces with "-"
+            .replace(/^-+/, '') // Remove leading hyphens
+            .replace(/-+$/, '') // Remove trailing hyphens
+            .replace(/-+/g, '-'); // Replace consecutive dashes with a single dash
+    }
 
     titre(input) {
         // Now expecting the first token to be "::"
