@@ -24,27 +24,24 @@ class GiftParser {
             if (typeof data !== 'string') {
                 throw new Error(`Invalid input: The provided text for file ${fileName} is not a string.`);
             }
-            
-            // Store the raw gift format before parsing
-            const rawGift = data;
-
-            // Remove comment lines that start with "//"
+    
+            // Remove comment lines that start with "//" and "$CATEGORY:"
             const cleanedData = data
                 .split('\n')
-                .filter(line => !line.trim().startsWith('//'))
+                .filter(line => !line.trim().startsWith('//') && !line.trim().startsWith('$CATEGORY:'))
                 .join('\n')
-                .replace(/\n{3,}/g, '\n\n')
-                .trim();       
-
-            // Split the data into individual questions, more robustly
-            const questionSplitRegex = /\n\s*\n::|\n\r\n::|\r\n\r\n::/;
+                .replace(/\n{3,}/g, '\n\n')  // Replace consecutive empty lines with a maximum of two newlines
+                .trim();  // Remove any leading or trailing whitespace
+    
+            // Modified split to keep the initial "::" with each question block
+            const questionSplitRegex = /\n\s*\n(?=::)|\n\r\n(?=::)|\r\n\r\n(?=::)/;
             const questionBlocks = cleanedData.split(questionSplitRegex).filter(block => block.trim() !== '');
             
             this.parsedQuestion = [];
             this.errorMessages = [];
             this.errorCount = 0;
             this.questionIndex = 0;
-
+    
             // Process each question block
             for (const block of questionBlocks) {
                 const tokens = this.tokenizeBlock(block);
@@ -60,12 +57,11 @@ class GiftParser {
     }
 
     tokenizeBlock(block) {
-        // Remove comments first
-        const cleanedBlock = block.replace(/\/\/.*/g, '').trim();
+        // Preserve "::" tokens
         const separator = /(::|{|}|=|~|#|MC|SA|\n|\$CATEGORY:|%)/g;
-
-        let tokens = cleanedBlock.split(separator).filter(token => token.trim() !== "");
-
+    
+        let tokens = block.split(separator).filter(token => token.trim() !== "");
+    
         tokens = tokens.map(token =>
             token.replace(/(<([^>]+)>)/gi, "")  // Remove HTML tags
                 .replace(/\[(\w+)\]/g, '')    // Remove markdown-like tags
@@ -73,7 +69,7 @@ class GiftParser {
                 .replace(/\s+/g, ' ')         // Collapse spaces
                 .trim()
         ).filter(token => token !== '');
-
+    
         return tokens;
     }
 
@@ -184,10 +180,30 @@ class GiftParser {
     
 
     titre(input) {
-        this.expect("::", input);
+        // Now expecting the first token to be "::"
+        if (input[0] !== '::') {
+            this.incrementErrorCount(`Expected "::", but got ${input[0]}`);
+            return `Untitled Question ${this.questionIndex}`;
+        }
+        
+        // Remove "::" 
+        this.next(input);
+        
+        // Capture the title 
         const curS = this.next(input) || '';
-        const matched = curS.match(/^[\s\w.,;:'"“”‘’\-!?()\[\]\/&%€$@+=<>…•{}#:~|]*$/u);
-        if (matched) return matched[0].trim();  
+        
+        // Handle HTML tags and extract title
+        const htmlMatch = curS.match(/\[html\](.*?)(?=::|\s*$)/);
+        if (htmlMatch) {
+            return htmlMatch[1].trim();
+        }
+        
+        // Standard title extraction
+        const titreMatch = curS.match(/^(.*?)(?=::|\s*$)/);
+        if (titreMatch) {
+            return titreMatch[1].trim();
+        }
+        
         this.incrementErrorCount(`Invalid titre: ${curS}`);
         return `Untitled Question ${this.questionIndex}`;  
     }
@@ -195,11 +211,12 @@ class GiftParser {
 
     texte(input) {
         const curS = this.next(input) || '';
-        const matched = curS.match(/^[\s\w.,;:'"“”‘’\-!?()\[\]\/&%€$@+=<>…•{}#:~|]*$/u);
+        // Remove all "::", "{", and "}" patterns and capture text
+        const matched = curS.replace(/::|\{|\}/g, '').match(/^[^{]*(?=\{|$)/);
         if (matched) return matched[0].trim();
         this.incrementErrorCount(`Invalid texte: ${curS}`);
         return '';
-    }
+     }
   
 
     bonnesReponses(input) {
