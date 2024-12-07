@@ -11,7 +11,6 @@ const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.js
 
 const CollectionQuestions = require('./CollectionQuestions');
 const gestionVCard = new GestionVCard();
-const Examen = require('./CollectionQuestions');
 
 cli
     .version('1.0.0')
@@ -254,7 +253,6 @@ cli
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
         
-	});
 	})
 
     .command('vcard', 'Générer un fichier vCard pour un enseignant')
@@ -290,5 +288,38 @@ cli
             logger.error(`Erreur : ${error.message}`);
         }
     })
+
+
+    // simulate   -- ERREUR NE MARCHE PAS
+    .command('simulate', 'Simule un examen à partir d\'une collection de questions')
+    .argument('<collection>', 'Nom complet sans extension de la collection GIFT à utiliser')
+    .action(async ({ args, logger }) => {
+        const collectionPath = path.resolve(dataFolderPath, `${args.collection}.gift`);
+
+        if (!fs.existsSync(collectionPath)) {
+            logger.error(`Erreur : Le fichier "${args.collection}" est introuvable.`);
+            process.exit(1);
+        }
+
+        try {
+            // Charger et parser les questions
+            const contenu = fs.readFileSync(collectionPath, 'utf8');
+            const collectionQuestions = new CollectionQuestions();
+            const questions = collectionQuestions.chargeExamQuestions(contenu, collectionPath, false);
+
+            if (questions.length === 0) {
+                logger.error('Aucune question valide trouvée dans la collection.');
+                process.exit(1);
+            }
+
+            // Lancer la simulation
+            logger.info(`Simulation d'un examen avec ${questions.length} question(s).`);
+            const examen = new Examen(questions);
+            await examen.simuler();
+        } catch (error) {
+            logger.error(`Erreur lors de la simulation : ${error.message}`);
+        }
+    });
+
 
 cli.run(process.argv.slice(2));
