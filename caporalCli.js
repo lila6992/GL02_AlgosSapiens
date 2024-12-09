@@ -5,7 +5,6 @@ const cli = require('@caporal/core').default;
 const vegaLite = require('vega-lite');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
-const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
 
 const CollectionQuestions = require('./CollectionQuestions');
@@ -42,30 +41,6 @@ cli
             const collectionQuestions = new CollectionQuestions();
             const allQuestions = collectionQuestions.chargeAllFolderQuestions(false);
             collectionQuestions.logQuestions(allQuestions); 
-        } catch (error) {
-            logger.error(`Erreur : ${error.message}`);
-        }
-    })
-
-    //view
-    .command('view', 'Afficher les questions dans la collection personnelle')
-    .action(({ logger }) => {
-        try {
-            const file = 'personal_collection.json';
-            let questions = [];
-            if (fs.existsSync(personalCollectionPath)) {
-                fs.readFile(personalCollectionPath, 'utf8', (err, data) => {
-                    if (err) {
-                        return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
-                    }
-                    const collectionQuestions = new CollectionQuestions();
-                    const questions = collectionQuestions.chargeExamQuestions(data, file, false); 
-                    console.log('La collection personnelle :')
-                    collectionQuestions.logQuestions(questions); 
-                });
-            } else {
-                console.log(`Le fichier de collection personnelle n est pas trouvable à l adresse suivante : ${chalk.red(personalCollectionPath)}`);
-            }
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
