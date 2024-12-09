@@ -164,6 +164,7 @@ cli
     })
     
     // add-selected
+    // ex : node caporalCli.js add examen_test
     .command('add-selected', 'Ajouter les questions sélectionnées d\'une collection spécifique')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .action(({ logger, args }) => {
@@ -190,6 +191,7 @@ cli
     })
 
     // create-collection
+    // ex : node caporalCli.js create-collection examen-super-joli
 	.command('create-collection', 'Créer un fichier GIFT à partir des questions sélectionnées')
 	.argument('<collection>', 'le nom de l\'examen')
 	.action(({ args }) => {
@@ -197,7 +199,8 @@ cli
         collectionQuestions.createCollection(args.collection);
 	})
 
-    .command('vcard', 'Générer un fichier vCard pour un enseignant')
+    // create-vcard
+    .command('create-vcard', 'Générer un fichier vCard pour un enseignant')
     .argument('<nom>', 'Nom de l\'enseignant')
     .argument('<prenom>', 'Prénom de l\'enseignant')
     .argument('<email>', 'Adresse e-mail de l\'enseignant')
@@ -233,6 +236,7 @@ cli
 
     
     // stats
+    // ex : node caporalCli.js stats examen_test
 	.command('stats', "Générer les statistiques d'un examen à partir du fichier GIFT ")
 	.argument('<collection>', 'le nom de l\'examen')
 	.action(({logger, args }) => {
