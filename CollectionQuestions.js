@@ -3,7 +3,6 @@ const writeFile = require('fs').promises.writeFile;
 const chalk = require('chalk');
 const path = require('path');
 const GiftParser = require('./GiftParser');
-const { CollectionQuestion, Question } = require('./Question');
 const readline = require('readline');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
@@ -12,7 +11,6 @@ const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.js
 class CollectionQuestions {
     constructor(nomFichier) {
         this.nomFichier = nomFichier;
-        this.questions = new CollectionQuestion();
     }
     
     /**
@@ -346,4 +344,3 @@ class CollectionQuestions {
 }
 
 module.exports = CollectionQuestions;
-

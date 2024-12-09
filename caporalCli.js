@@ -3,20 +3,18 @@ const path = require('path');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
 const { VCard, GestionVCard } = require('./vCard');
-
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
-
 const CollectionQuestions = require('./CollectionQuestions');
-const {Question, CollectionQuestion } = require('./Question');
 const gestionVCard = new GestionVCard();
+const Examen = require('./CollectionQuestions');
 
 cli
     .version('1.0.0')
     .description('Outil CLI pour gérer les fichiers GIFT')
 
     // check
-    .command('check', 'Vérifier si tous les fichiers GIFT du dossier sont valides')
+    .command('check', 'Vérifier si la collection sélectionnée est valide')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .option('-f, --format', 'Vérifier le formattage du fichier gift', { validator: cli.BOOLEAN, default: false })
     .action(({ args, options, logger }) => {
@@ -36,7 +34,7 @@ cli
     })
 
     // list
-    // list
+    // ex : node caporalCli.js -t qcm1
     .command('list', 'Afficher toutes les questions')
     .option('-t, --type <type>', 'Filtrer les questions par type', { validator: cli.STRING, default: '' }) // Ajout de l'option pour filtrer par type
     .action(({ logger, options }) => {
@@ -69,32 +67,8 @@ cli
     })
     
 
-    //view
-    .command('view', 'Afficher les questions dans la collection personnelle')
-    .action(({ logger }) => {
-        try {
-            const file = 'personal_collection.json';
-            let questions = [];
-            if (fs.existsSync(personalCollectionPath)) {
-                fs.readFile(personalCollectionPath, 'utf8', (err, data) => {
-                    if (err) {
-                        return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
-                    }
-                    const collectionQuestions = new CollectionQuestions();
-                    const questions = collectionQuestions.chargeExamQuestions(data, file, false); 
-                    console.log('La collection personnelle :')
-                    collectionQuestions.logQuestions(questions); 
-                });
-            } else {
-                console.log(`Le fichier de collection personnelle n est pas trouvable à l adresse suivante : ${chalk.red(personalCollectionPath)}`);
-            }
-        } catch (error) {
-            logger.error(`Erreur : ${error.message}`);
-        }
-    })
-
     // explore
-    .command('explore', 'Afficher les questions dans la collection personnelle')
+    .command('explore', 'Afficher les questions dans la collection')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .action(({ logger, args }) => {
         const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
@@ -110,7 +84,7 @@ cli
     })
 
     // countain
-    .command('countain', 'Afficher les questions dans la collection personnelle')
+    .command('countain', 'Afficher si une la question est présente dans la collection')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .argument('<id>', 'ID de la question')
     .action(({ logger, args }) => {
@@ -255,6 +229,6 @@ cli
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
-    });
+    })
 
 cli.run(process.argv.slice(2));
