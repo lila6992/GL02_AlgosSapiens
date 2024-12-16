@@ -16,5 +16,6 @@ Les jeux de données sont rangés dans le dossier data/gift. Il suffit de faire 
 
  **Prénom NOM :** Arthur PARIS
  **Pseudo GitHub* :** Xtazhoxton
+ 
  **Prénom NOM :** Corentin CHARTIER
  **Pseudo GitHub* :** CocoChart
