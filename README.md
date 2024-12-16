@@ -1,5 +1,5 @@
 # GL02_AlgosSapiens
-Pour installer les modules : *npm install* puis *npm install chalk*
+Pour installer les modules : *npm install* puis *npm install chalk* puis *npx jasmine*
 Les dépendances se trouvent dans le fichier package.json.
 
 Pour obtenir la liste des fonctions et leuir usage : *node .\caporalCli.js help*

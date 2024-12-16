@@ -5,20 +5,19 @@ const cli = require('@caporal/core').default;
 const vegaLite = require('vega-lite');
 
 const { VCard, GestionVCard } = require('./vCard');
+
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
-const personalCollectionPath = path.join(__dirname, 'data', 'personal_collection.json');
 const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
 
 const CollectionQuestions = require('./CollectionQuestions');
 const gestionVCard = new GestionVCard();
-const Examen = require('./CollectionQuestions');
 
 cli
     .version('1.0.0')
     .description('Outil CLI pour gérer les fichiers GIFT')
 
     // check
-    .command('check', 'Vérifier si tous les fichiers GIFT du dossier sont valides')
+    .command('check', 'Vérifier si la collection sélectionnée est valide')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .option('-f, --format', 'Vérifier le formattage du fichier gift', { validator: cli.BOOLEAN, default: false })
     .action(({ args, options, logger }) => {
@@ -38,7 +37,7 @@ cli
     })
 
     // list
-    // list
+    // ex : node caporalCli.js -t qcm1
     .command('list', 'Afficher toutes les questions')
     .option('-t, --type <type>', 'Filtrer les questions par type', { validator: cli.STRING, default: '' }) // Ajout de l'option pour filtrer par type
     .action(({ logger, options }) => {
@@ -71,32 +70,8 @@ cli
     })
     
 
-    //view
-    .command('view', 'Afficher les questions dans la collection personnelle')
-    .action(({ logger }) => {
-        try {
-            const file = 'personal_collection.json';
-            let questions = [];
-            if (fs.existsSync(personalCollectionPath)) {
-                fs.readFile(personalCollectionPath, 'utf8', (err, data) => {
-                    if (err) {
-                        return logger.warn(`Erreur de lecture du fichier ${file}: ${err}`);
-                    }
-                    const collectionQuestions = new CollectionQuestions();
-                    const questions = collectionQuestions.chargeExamQuestions(data, file, false); 
-                    console.log('La collection personnelle :')
-                    collectionQuestions.logQuestions(questions); 
-                });
-            } else {
-                console.log(`Le fichier de collection personnelle n est pas trouvable à l adresse suivante : ${chalk.red(personalCollectionPath)}`);
-            }
-        } catch (error) {
-            logger.error(`Erreur : ${error.message}`);
-        }
-    })
-
     // explore
-    .command('explore', 'Afficher les questions dans la collection personnelle')
+    .command('explore', 'Afficher les questions dans la collection')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .action(({ logger, args }) => {
         const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
@@ -191,6 +166,7 @@ cli
     })
     
     // add-selected
+    // ex : node caporalCli.js add examen_test
     .command('add-selected', 'Ajouter les questions sélectionnées d\'une collection spécifique')
     .argument('<collection>', 'Nom complet sans extension du fichier de collection')
     .action(({ logger, args }) => {
@@ -217,6 +193,7 @@ cli
     })
 
     // create-collection
+    // ex : node caporalCli.js create-collection examen-super-joli
 	.command('create-collection', 'Créer un fichier GIFT à partir des questions sélectionnées')
 	.argument('<collection>', 'le nom de l\'examen')
 	.action(({ args }) => {
@@ -224,40 +201,8 @@ cli
         collectionQuestions.createCollection(args.collection);
 	})
 
-    // stats
-	.command('stats', "Générer les statistiques d'un examen à partir du fichier GIFT ")
-	.argument('<collection>', 'le nom de l\'examen')
-	.action(({logger, args }) => {
-        try{
-            const collectionQuestions = new CollectionQuestions();
-            const stats = collectionQuestions.genererStats(args.collection);
-            const type = Object.keys(stats);
-            const nb = Object.values(stats);
-            console.log(type)
-            console.log(nb)
-
-
-            let vlSpec = {
-                $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-                data: {
-                  values: type, nb
-                },
-                mark: 'bar',
-                encoding: {
-                  x: {field: type, type: 'ordinal'},
-                  y: {field: nb, type: 'quantitative'}
-                }
-              };
-              //var vgSpec = vegaLite.compile(vlSpec, logger).spec;
-              console.log(vlSpec)
-        }  catch (error) {
-            logger.error(`Erreur lors de la recherche : ${error.message}`);
-        }
-        
-	})
-	
-
-    .command('vcard', 'Générer un fichier vCard pour un enseignant')
+    // create-vcard
+    .command('create-vcard', 'Générer un fichier vCard pour un enseignant')
     .argument('<nom>', 'Nom de l\'enseignant')
     .argument('<prenom>', 'Prénom de l\'enseignant')
     .argument('<email>', 'Adresse e-mail de l\'enseignant')
@@ -290,5 +235,37 @@ cli
             logger.error(`Erreur : ${error.message}`);
         }
     })
+
+    
+    // stats
+    // ex : node caporalCli.js stats examen_test
+	.command('stats', "Générer les statistiques d'un examen à partir du fichier GIFT ")
+	.argument('<collection>', 'le nom de l\'examen')
+	.action(({logger, args }) => {
+        try{
+            const collectionQuestions = new CollectionQuestions();
+            const stats = collectionQuestions.genererStats(args.collection);
+            const type = Object.keys(stats);
+            const nb = Object.values(stats);
+            console.log(stats)
+
+
+            let vlSpec = {
+                $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+                data: {
+                  values: type, nb
+                },
+                mark: 'bar',
+                encoding: {
+                  x: {field: type, type: 'ordinal'},
+                  y: {field: nb, type: 'quantitative'}
+                }
+              };
+              //var vgSpec = vegaLite.compile(vlSpec, logger).spec;
+        }  catch (error) {
+            logger.error(`Erreur lors de la recherche : ${error.message}`);
+        }
+        
+	});
 
 cli.run(process.argv.slice(2));
