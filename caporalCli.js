@@ -245,8 +245,7 @@ cli
             const stats = collectionQuestions.genererStats(args.collection);
             const type = Object.keys(stats);
             const nb = Object.values(stats);
-            console.log(type)
-            console.log(nb)
+            console.log(stats)
 
 
             let vlSpec = {
@@ -261,7 +260,6 @@ cli
                 }
               };
               //var vgSpec = vegaLite.compile(vlSpec, logger).spec;
-              console.log(vlSpec)
         }  catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
