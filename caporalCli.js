@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
+const vegaLite = require('vega-lite');
+
 const { VCard, GestionVCard } = require('./vCard');
 
 const dataFolderPath = path.join(__dirname, 'data', 'gift');
