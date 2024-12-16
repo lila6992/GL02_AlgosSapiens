@@ -254,8 +254,8 @@ cli
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
         
-	});
 	})
+	
 
     .command('vcard', 'Générer un fichier vCard pour un enseignant')
     .argument('<nom>', 'Nom de l\'enseignant')
