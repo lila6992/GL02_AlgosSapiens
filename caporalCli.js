@@ -210,9 +210,7 @@ cli
     .option('--organisation <organisation>', 'Nom de l\'organisation', {
         default: 'SRYEM',
     })
-    .option('--fichier <fichier>', 'Nom du fichier vCard généré (sans extension)', {
-        default: 'enseignant',
-    })
+    
     .action(({ args, options, logger }) => {
         try {
             // Créer une instance de VCard
@@ -223,19 +221,24 @@ cli
                 args.telephone,
                 options.organisation
             );
-
+    
+            // Générer le nom du fichier à partir des propriétés de l'instance vCard
+            const nomFichier = `${vcard.nom}_${vcard.prenom}`; 
+    
+            // Créer une instance de GestionVCard
+            const gestionVCard = new GestionVCard();
+    
             // Définir le chemin du fichier
-            const cheminFichier = `${options.fichier}.vcf`;
-
+            const cheminFichier = path.join(gestionVCard.dossierVCard, `${nomFichier}.vcf`);
+    
             // Générer et sauvegarder la vCard
-            gestionVCard.genererEtSauvegarder(vcard, cheminFichier);
-
+            gestionVCard.genererEtSauvegarder(vcard, nomFichier);
+    
             logger.info(`Fichier vCard généré avec succès : ${cheminFichier}`);
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
         }
     })
-
     
     // stats
     // ex : node caporalCli.js stats examen_test
