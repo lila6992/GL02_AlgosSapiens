@@ -250,20 +250,26 @@ cli
             const stats = collectionQuestions.genererStats(args.collection);
             const type = Object.keys(stats);
             const nb = Object.values(stats);
-            console.log(stats)
+            //console.log(stats)
 
+            let listeValeurs = [];
+            for (let i = 0; i < type.length; i++) {
+                listeValeurs.push({"Type de question": type[i], "Nombre de question": nb[i]});
+            }
 
             let vlSpec = {
-                $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+                $schema: "https://vega.github.io/schema/vega-lite/v5.json",
                 data: {
-                  values: type, nb
+                  values: listeValeurs
                 },
                 mark: 'bar',
                 encoding: {
-                  x: {field: type, type: 'ordinal'},
-                  y: {field: nb, type: 'quantitative'}
+                  x: {field: "Type de question", type: 'ordinal'},
+                  y: {field: "Nombre de question", type: 'quantitative'}
                 }
               };
+            console.log("\n\n----- Code Vega-lite :")
+            console.log(JSON.stringify(vlSpec, null, 2)); //On le mets en JSON pour avoir les vraies guillemets
               //var vgSpec = vegaLite.compile(vlSpec, logger).spec;
         }  catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
