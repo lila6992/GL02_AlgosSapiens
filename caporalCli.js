@@ -3,6 +3,7 @@ const path = require('path');
 const chalk = require('chalk');
 const cli = require('@caporal/core').default;
 const vegaLite = require('vega-lite');
+const inquirer = require('inquirer');
 
 const { VCard, GestionVCard } = require('./vCard');
 
@@ -18,10 +19,23 @@ cli
 
     // check
     .command('check', 'Vérifier si la collection sélectionnée est valide')
-    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
+    .argument('[collection]', 'Nom complet sans extension du fichier de collection')
     .option('-f, --format', 'Vérifier le formattage du fichier gift', { validator: cli.BOOLEAN, default: false })
-    .action(({ args, options, logger }) => {
-        const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
+    .action(async({ args, options, logger }) => {
+
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
+
+        const collectionPath = path.join(dataFolderPath, `${collectionName}.gift`);
         try {
             const collectionQuestions = new CollectionQuestions();
             const data = fs.readFileSync(collectionPath, 'utf8'); 
@@ -72,9 +86,22 @@ cli
 
     // explore
     .command('explore', 'Afficher les questions dans la collection')
-    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
-    .action(({ logger, args }) => {
-        const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
+    .argument('[collection]', 'Nom complet sans extension du fichier de collection')
+    .action(async({ logger, args }) => {
+
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
+
+        const collectionPath = path.join(dataFolderPath, `${collectionName}.gift`);
         try {
             const collectionQuestions = new CollectionQuestions();
             const data = fs.readFileSync(collectionPath, 'utf8'); 
@@ -88,10 +115,23 @@ cli
 
     // countain
     .command('countain', 'Affiche si la question est comprise dans la collection')
-    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
+    .argument('[collection]', 'Nom complet sans extension du fichier de collection')
     .argument('<id>', 'ID de la question')
-    .action(({ logger, args }) => {
-        const collectionPath = path.join(dataFolderPath, `${args.collection}.gift`);
+    .action(async({ logger, args }) => {
+
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
+
+        const collectionPath = path.join(dataFolderPath, `${collectionName}.gift`);
         try {
             const collectionQuestions = new CollectionQuestions();
             const data = fs.readFileSync(collectionPath, 'utf8'); // Lecture synchronisée du fichier
@@ -109,12 +149,25 @@ cli
 
     // count
     .command('count', 'Compter le nombre de questions dans une collection')
-    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
-    .action( ({ logger, args }) => {
+    .argument('[collection]', 'Nom complet sans extension du fichier de collection')
+    .action( async({ logger, args }) => {
+
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
+
         try {   
             const collectionQuestions = new CollectionQuestions();
-            const nbQuestions = collectionQuestions.compterQuestions(args.collection);
-            console.log(chalk.bold(`Total de questions dans la collection ${args.collection} : `) + chalk.gray(nbQuestions));
+            const nbQuestions = collectionQuestions.compterQuestions(collectionName);
+            console.log(chalk.bold(`Total de questions dans la collection ${collectionName} : `) + chalk.gray(nbQuestions));
         } catch (error) {
             logger.error(`Erreur lors de la recherche : ${error.message}`);
         }
@@ -168,11 +221,24 @@ cli
     // add-selected
     // ex : node caporalCli.js add examen_test
     .command('add-selected', 'Ajouter les questions sélectionnées d\'une collection spécifique')
-    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
-    .action(({ logger, args }) => {
+    .argument('[collection]', 'Nom complet sans extension du fichier de collection')
+    .action(async ({ logger, args }) => {
+
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
+
         try {  
             const collectionQuestions = new CollectionQuestions();
-            const collectionPath = path.join(__dirname, 'data', 'gift', `${args.collection}.gift`); 
+            const collectionPath = path.join(__dirname, 'data', 'gift', `${collectionName}.gift`); 
             collectionQuestions.ajouterQuestions(collectionPath);
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
@@ -181,11 +247,23 @@ cli
     
     // remove-selected
     .command('remove-selected', 'Retirer les questions sélectionnées d\'une collection spécifique')
-    .argument('<collection>', 'Nom complet sans extension du fichier de collection')
-    .action(({ logger, args }) => {
+    .argument('[collection]', 'Nom complet sans extension du fichier de collection')
+    .action(async({ logger, args }) => {
+
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
         try {
             const collectionQuestions = new CollectionQuestions();
-            const collectionPath = path.join(__dirname, 'data', 'gift', `${args.collection}.gift`); 
+            const collectionPath = path.join(__dirname, 'data', 'gift', `${collectionName}.gift`); 
             collectionQuestions.removeQuestions(collectionPath); 
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
@@ -195,10 +273,22 @@ cli
     // create-collection
     // ex : node caporalCli.js create-collection examen-super-joli
 	.command('create-collection', 'Créer un fichier GIFT à partir des questions sélectionnées')
-	.argument('<collection>', 'le nom de l\'examen')
-	.action(({ args }) => {
+	.argument('[collection]', 'le nom de l\'examen')
+	.action(async ({ args }) => {
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
+
         const collectionQuestions = new CollectionQuestions();
-        collectionQuestions.createCollection(args.collection);
+        collectionQuestions.createCollection(collectionName);
 	})
 
     // create-vcard
@@ -243,11 +333,24 @@ cli
     // stats
     // ex : node caporalCli.js stats examen_test
 	.command('stats', "Générer les statistiques d'un examen à partir du fichier GIFT ")
-	.argument('<collection>', 'le nom de l\'examen')
-	.action(({logger, args }) => {
+	.argument('[collection]', 'le nom de l\'examen')
+	.action(async({logger, args }) => {
+
+        let collectionName = args.collection;
+        if (!collectionName) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'collectionName',
+                    message: 'Entrez le nom de la collection :',
+                },
+            ]); 
+            collectionName=input.collectionName; 
+        }
+
         try{
             const collectionQuestions = new CollectionQuestions();
-            const stats = collectionQuestions.genererStats(args.collection);
+            const stats = collectionQuestions.genererStats(collectionName);
             const type = Object.keys(stats);
             const nb = Object.values(stats);
             //console.log(stats)
