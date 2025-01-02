@@ -188,15 +188,27 @@ cli
    
     // search
     .command('search', 'Rechercher des questions par mot-clé')
-    .argument('<motCle>', 'Mot-clé pour rechercher des questions')
-    .action( ({ logger, args }) => {
+    .argument('[motCle]', 'Mot-clé pour rechercher des questions')
+    .action(async({ logger, args }) => {
+
+        let motCle = args.motCle;
+        if (!motCle) {
+            const input = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'motCle',
+                    message: 'Entrez le mot-clé pour rechercher des questions :',
+                },
+            ]); 
+            motCle=input.motCle; 
+        }
         try {   
             const collectionQuestions = new CollectionQuestions();
             const allQuestions = collectionQuestions.chargeAllFolderQuestions(false);
             logger.info(`Total questions chargées : ${allQuestions.length}`);
-            const searchResults = collectionQuestions.search(allQuestions, args.motCle);
+            const searchResults = collectionQuestions.search(allQuestions, motCle);
             if (searchResults.length === 0) {
-                logger.info(`Aucune question trouvée pour le mot-clé : "${args.motCle}".`);
+                logger.info(`Aucune question trouvée pour le mot-clé : "${motCle}".`);
             } else {
                 logger.info(`Nombre de résultats : ${searchResults.length}`);
                 collectionQuestions.logQuestions(searchResults);
