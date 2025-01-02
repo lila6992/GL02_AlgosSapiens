@@ -331,23 +331,47 @@ cli
 
     // create-vcard
     .command('create-vcard', 'Générer un fichier vCard pour un enseignant')
-    .argument('<nom>', 'Nom de l\'enseignant')
-    .argument('<prenom>', 'Prénom de l\'enseignant')
-    .argument('<email>', 'Adresse e-mail de l\'enseignant')
-    .argument('<telephone>', 'Numéro de téléphone de l\'enseignant')
-    .option('--organisation <organisation>', 'Nom de l\'organisation', {
-        default: 'SRYEM',
-    })
     
-    .action(({ args, options, logger }) => {
+    .action(async({ args, options, logger }) => {
+
+        const input = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'nom',
+                message: 'Entrez le nom de l\'enseignant :',
+            },
+            {
+                type: 'input',
+                name: 'prenom',
+                message: 'Entrez le prénom de l\'enseignant :',
+            },
+            {
+                type: 'input',
+                name: 'email',
+                message: 'Entrez l\'adresse e-mail de l\'enseignant :',
+            },
+            {
+                type: 'input',
+                name: 'telephone',
+                message: 'Entrez le numéro de téléphone de l\'enseignant :',
+            },
+            {
+                type:'input', 
+                name:'organisation',
+                message:'Entrez l\'organisation de l\'enseignant :',
+            }
+        ]);
+        
+        
+        
         try {
             // Créer une instance de VCard
             const vcard = new VCard(
-                args.nom,
-                args.prenom,
-                args.email,
-                args.telephone,
-                options.organisation
+                input.nom,
+                input.prenom,
+                input.email,
+                input.telephone,
+                input.organisation
             );
     
             // Générer le nom du fichier à partir des propriétés de l'instance vCard
