@@ -11,6 +11,7 @@ const dataFolderPath = path.join(__dirname, 'data', 'gift');
 const tempStoragePath = path.join(__dirname, 'data', 'temp_selected_questions.json');
 
 const CollectionQuestions = require('./CollectionQuestions');
+const { id } = require('vega');
 const gestionVCard = new GestionVCard();
 
 cli
@@ -116,7 +117,7 @@ cli
     // countain
     .command('countain', 'Affiche si la question est comprise dans la collection')
     .argument('[collection]', 'Nom complet sans extension du fichier de collection')
-    .argument('<id>', 'ID de la question')
+    .argument('[id]', 'ID de la question')
     .action(async({ logger, args }) => {
 
         let collectionName = args.collection;
@@ -131,16 +132,28 @@ cli
             collectionName=input.collectionName; 
         }
 
+        let idQuestion = args.id;
+        if (!idQuestion) {
+            const input2 = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'idQuestion',
+                    message: 'Entrez l\'id de la question souhaitée :',
+                },
+            ]); 
+            idQuestion=input2.idQuestion; 
+        }
+
         const collectionPath = path.join(dataFolderPath, `${collectionName}.gift`);
         try {
             const collectionQuestions = new CollectionQuestions();
             const data = fs.readFileSync(collectionPath, 'utf8'); // Lecture synchronisée du fichier
             const questions = collectionQuestions.chargeExamQuestions(data, collectionPath, false);
-            const isContained = collectionQuestions.contientQuestions(questions, args.id);
+            const isContained = collectionQuestions.contientQuestions(questions, idQuestion);
             if (isContained) {
-                logger.info(`La question avec l'ID "${args.id}" est présente dans la collection "${args.collection}".`);
+                logger.info(`La question avec l'ID "${idQuestion}}" est présente dans la collection "${collectionName}".`);
             } else {
-                logger.info(`La question avec l'ID "${args.id}" n'est PAS présente dans la collection "${args.collection}".`);
+                logger.info(`La question avec l'ID "${idQuestion}" n'est PAS présente dans la collection "${collectionName}".`);
             }
         } catch (err) {
             logger.error('Erreur de lecture du fichier :', err);
@@ -195,12 +208,25 @@ cli
     
     // select
     .command('select', 'Sélectionner des ID et charger les questions')
-    .argument('<id>', 'ID 1')
-    .action(({ logger, args }) => {
+    .argument('[id]', 'ID 1')
+    .action(async({ logger, args }) => {
+
+        let idQuestion = args.id;
+        if (!idQuestion) {
+            const input2 = await inquirer.prompt([
+                {
+                    type: 'input', 
+                    name: 'idQuestion',
+                    message: 'Entrez l\'id de la question souhaitée :',
+                },
+            ]); 
+            idQuestion=input2.idQuestion; 
+        }
+
         try {
             const collectionQuestions = new CollectionQuestions();
             const allQuestions = collectionQuestions.chargeAllFolderQuestions(false);
-            collectionQuestions.selectQuestionsFromId(allQuestions, args.id);
+            collectionQuestions.selectQuestionsFromId(allQuestions, idQuestion);
         } catch (error) {
         logger.error(`Erreur lors de la sélection des questions : ${error.message}`);
         }
