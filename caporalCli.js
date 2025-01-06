@@ -60,12 +60,6 @@ cli
             const collectionQuestions = new CollectionQuestions();
             const allQuestions = collectionQuestions.chargeAllFolderQuestions(false); // Charger toutes les questions
     
-            // Log des types de questions
-            logger.info("Types de questions présentes :");
-            allQuestions.forEach(q => {
-                logger.info(q.typeDeQuestion); // Affiche les types de questions
-            });
-    
             let filteredQuestions = allQuestions;
     
             // Si un type est spécifié, filtrer les questions par type
@@ -77,7 +71,13 @@ cli
             if (filteredQuestions.length > 0) {
                 collectionQuestions.logQuestions(filteredQuestions); 
             } else {
+                            
                 logger.info(`Aucune question trouvée pour le type "${options.type}".`);
+                const typeQuestions = new Set();
+                allQuestions.forEach(q => {
+                    typeQuestions.add(q.typeDeQuestion); // Affiche les types de questions
+                });
+                logger.info("Types de questions présentes : "+ Array.from(typeQuestions).join(', '));
             }
         } catch (error) {
             logger.error(`Erreur : ${error.message}`);
