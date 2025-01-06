@@ -1,4 +1,4 @@
-# GL02_AlgosSapiens
+# GL02_AlgosSapiens_Maintenance
 Pour installer les modules : *npm install* puis *npm install chalk* puis *npx jasmine*.
 Depuis la maintenance, il faut également installer *npm install inquirer*. 
 Les dépendances se trouvent dans le fichier package.json.
