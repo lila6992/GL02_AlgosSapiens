@@ -310,9 +310,9 @@ cli
 
     // create-collection
     // ex : node caporalCli.js create-collection examen-super-joli
-	.command('create-collection', 'Créer un fichier GIFT à partir des questions sélectionnées')
-	.argument('[collection]', 'le nom de l\'examen')
-	.action(async ({ args }) => {
+    .command('create-collection', 'Créer un fichier GIFT à partir des questions sélectionnées')
+    .argument('[collection]', 'le nom de l\'examen')
+    .action(async ({ args }) => {
         let collectionName = args.collection;
         if (!collectionName) {
             const input = await inquirer.prompt([
@@ -326,8 +326,17 @@ cli
         }
 
         const collectionQuestions = new CollectionQuestions();
-        collectionQuestions.createCollection(collectionName);
-	})
+        const temp_path = path.join(__dirname, 'data', 'temp_selected_questions.json');
+        const data = fs.readFileSync(temp_path, 'utf8');
+        numberQuestions = JSON.parse(data).length;
+        if (numberQuestions <15 || numberQuestions >20){
+            console.log("Nombre de questions sélectionnées incorrecte");
+            return;
+        }
+        else {
+            collectionQuestions.createCollection(collectionName);
+        }
+    })
 
     // create-vcard
     .command('create-vcard', 'Générer un fichier vCard pour un enseignant')
